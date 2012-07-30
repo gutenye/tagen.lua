@@ -1,7 +1,7 @@
 require "spec_helper"
 
-local User, Student, Foo, Userable, Studentable, Fooable
-local user, student
+local User, Student, Child, Foo, Userable, Studentable, Fooable
+local user, student, child
 
 describe ["class"] = function()
   describe ["class"] = function()
@@ -64,6 +64,10 @@ describe ["class"] = function()
     before = function()
       User = class("User")
       Student = class("Student", User)
+    end
+
+    it ["Object's superclass is nil"] = function()
+      expect(Object.superclass).to_equal(nil)
     end
 
     it ["superclass is Object when not given"] = function()
@@ -212,7 +216,6 @@ describe ["class"] = function()
     end
 
     it ["returns true if x is in it's inheritance"] = function()
-      print("--")
       expect(student:kind_of(User)).to_equal(true)
     end
 
@@ -229,5 +232,30 @@ describe ["class"] = function()
       expect(student:kind_of(Fooable)).to_equal(false)
     end
   end
-end
 
+  describe ["metamethods"] = function()
+    before = function()
+      User = class("User")
+      Student = class("Student", User)
+      Child = class("Child", Student)
+    end
+
+    it ["will invoke when defined as an instance_method"] = function()
+      function User:__add()
+        return "User#__add"
+      end
+
+      user = User:new()
+      expect(user+1).to_equal("User#__add")
+    end
+
+    it ["supports inheritance"] = function()
+      function User:__add()
+        return "User#__add"
+      end
+
+      child = Child:new()
+      expect(child+1).to_equal("User#__add")
+    end
+  end
+end

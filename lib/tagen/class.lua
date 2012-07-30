@@ -5,14 +5,65 @@
 
 local tagen = require "tagen.core"
 local tablex = require "tagen.tablex"
+local METAMETHODS = {'__add', '__call', '__concat', '__div', '__le', '__lt', '__mod', '__mul', '__pow', '__sub', '__tostring', '__unm' }
+
+local function _create_lookup_metamethod(klass, name)
+  return function(...)
+    local method = nil
+
+    if klass.superclass then
+      method = klass.superclass.__instance_methods[name]
+    end
+
+    assert( type(method)=='function', tostring(klass) .. " doesn't implement metamethod '" .. name .. "'" )
+
+    return method(...)
+  end
+end
 
 -- ¤class
 local function class(name, superclass)
   superclass = superclass or Object
-  local c = {name = name, superclass = superclass} 
-  c.__mixins = {} -- {<mixin>=true, ..}
-  c.__methods = {}
-  c.__instance_methods = {}
+  local klass = {name = name, superclass = superclass} 
+  klass.__mixins = {} -- {<mixin>=true, ..}
+  klass.__methods = {}
+
+  klass.__instance_methods = {
+    __index = function(instance, key)
+      local klass = instance.class
+
+      -- property
+      local v = klass.__instance_methods["get_"..key]
+      if v then return v(instance) end
+
+      -- method
+      v = klass.__instance_methods[key]
+      if v then return v end
+
+      -- variable
+      v = rawget(instance, key)
+      if v ~= nil then return v end
+
+      -- field
+      return rawget(instance, '_'..key)
+    end,
+
+    __newindex = function(instance, key, value)
+      local klass = instance.class
+
+      -- property
+      local v = klass.__instance_methods["set_"..key]
+      if v then return v(instance, value) end
+
+      -- variable or method
+      return rawset(instance, key, value)
+    end
+  }
+
+  for _,name in ipairs(METAMETHODS) do
+    klass.__instance_methods[name] = _create_lookup_metamethod(klass, name)
+  end
+
   local mt = {
     __index = function(t, key)
       if key == "static" then  -- for define a class method
@@ -31,24 +82,26 @@ local function class(name, superclass)
       end
     end,
 
-    __newindex = c.__instance_methods,
+    __newindex = klass.__instance_methods,
 
     -- User
-    ---[[
+    --[[
     __tostring = function(t)
       return t.name
     end,
     --]]
   }
 
-  local __methods_newindex = function(t, key, value)
-    -- property
-    local v = t["set_"..key]
-    if v then return v(t, value) end
+  local __methods_mt = {
+    __newindex = function(t, key, value)
+      -- property
+      local v = t["set_"..key]
+      if v then return v(t, value) end
 
-    -- variable & method
-    return rawset(t, key, value)
-  end
+      -- variable & method
+      return rawset(t, key, value)
+    end
+  }
 
   if superclass then
     -- inherited
@@ -57,13 +110,14 @@ local function class(name, superclass)
       inherited(superclass, c)
     end
 
-    setmetatable(c.__methods, {__index = superclass.__methods, __newindex = __methods_newindex})
-    setmetatable(c.__instance_methods, {__index = superclass.__instance_methods})
+    __methods_mt["__index"] = superclass.__methods
+    setmetatable(klass.__methods, __methods_mt)
+    setmetatable(klass.__instance_methods, {__index = superclass.__instance_methods})
   else
-    setmetatable(c.__methods, {__newindex = __methods_newindex})
+    setmetatable(klass.__methods, __methods_mt)
   end
 
-  return setmetatable(c, mt)
+  return setmetatable(klass, mt)
 end
 
 -- ¤Object
@@ -79,75 +133,16 @@ function Object.static:new(...)
 end
 
 function Object.static:allocate()
-  local instance = {class = self}
-  local mt = {
-    __index = function(t, key)
-      local class = t.class
-      -- property
-      local v = class.__instance_methods["get_"..key]
-      if v then return v(t) end
+  local klass = self
+  local instance = {class = klass}
 
-      -- method
-      v = class.__instance_methods[key]
-      if v then return v end
-
-      -- variable
-      v = rawget(t, key)
-      if v ~= nil then return v end
-
-      -- field
-      return rawget(t, '_'..key)
-    end,
-
-    __newindex = function(t, key, value)
-      -- property
-      local v = self.__instance_methods["set_"..key]
-      if v then return v(t, value) end
-
-      -- variable or method
-      return rawset(t, key, value)
-    end,
-
-    -- #<User: a=1, _b=2>
-    __tostring = function(t)
-      local ret = "#<" .. t.class.name
-
-      local ivars = {}
-      local has_ivar = false
-      for k, v in pairs(t) do
-        if k == "class" then
-          -- pass
-        else
-          has_ivar = true
-          table.insert(ivars, k.."="..tostring(v))
-        end
-      end
-      if has_ivar then
-        ret = ret .. ": " .. table.concat(ivars, ", ")
-      end
-
-      return ret .. ">"
-    end
-  }
-
-  return setmetatable(instance, mt)
+  return setmetatable(instance, klass.__instance_methods)
 end
 
 function Object.static:super(...)
   local name = debug.getinfo(2, "n").name
   self.superclass.__methods[name](self, ...)
 end
-
---[[
--- include methods and variables
-function Object.static:methods() 
-  return tablex.keys(self.__methods)
-end
-
-function Object.static:instance_methods() 
-  return tablex.keys(self.__instance_methods)
-end
---]]
 
 function Object:initialize() end
 
@@ -174,6 +169,27 @@ function Object:kind_of(klass)
   end
 
   return false
+end
+
+-- #<User: a=1, _b=2>
+function Object:__tostring()
+  local ret = "#<" .. self.class.name
+
+  local ivars = {}
+  local has_ivar = false
+  for k, v in pairs(self) do
+    if k == "class" then
+      -- pass
+    else
+      has_ivar = true
+      table.insert(ivars, k.."="..tostring(v))
+    end
+  end
+  if has_ivar then
+    ret = ret .. ": " .. table.concat(ivars, ", ")
+  end
+
+  return ret .. ">"
 end
 
 return class
