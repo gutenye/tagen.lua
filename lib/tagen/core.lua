@@ -1,5 +1,6 @@
 --- Generally useful routines.
 -- See  @{01-introduction.md.Generally_useful_functions|the Guide}.
+--
 -- @module tagen.core
 local clock = os.clock
 local stdout = io.stdout
@@ -10,6 +11,7 @@ local tagen = {
 }
 local global = {}
 local lua51 = rawget(_G,'setfenv')
+
 
 tagen.lua51 = lua51
 if not lua51 then -- Lua 5.2 compatibility
@@ -200,7 +202,7 @@ end
 -- @return n values
 -- @usage first,next = splitv('jane:doe',':')
 -- @see split
-function tagen.splitv (s,re)
+function tagen.splitv(s,re)
   return unpack(tagen.split(s,re))
 end
 
@@ -529,6 +531,18 @@ function tagen.merge(t1, t2)
   for k, v in pairs(t2) do
     t1[k] = v
   end
+end
+
+-- Dependencies: `tagen.path`
+function tagen.require_relative(path)
+  local path = require("tagen.path")
+
+  local source = debug.getinfo(2).short_src
+  local path = path.absolute(path.dirname(source)..path)
+
+  print("real_path", path)
+
+  return require(path)
 end
 
 --
@@ -877,7 +891,8 @@ tagen.dir = Pretty:new { compact=false, depth=1, key="%-20s",
 tagen.pd = tagen.p
 
 -- fill global
-for _, meth in ipairs({"p", "pd", "ls", "dir", "printf", "sprintf", "quit", "alias"}) do
+local globals = {"p", "pd", "ls", "dir", "printf", "sprintf", "quit", "alias", "require_relative"}
+for _, meth in ipairs(globals) do
   global[meth] = tagen[meth]
 end
 

@@ -31,7 +31,3 @@ asserteq(
     app.appfile 'config',
     path.expanduser('~/.test-args/config'):gsub('/',path.sep)
 )
-
-
-
-

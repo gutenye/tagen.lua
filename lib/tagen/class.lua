@@ -1,8 +1,16 @@
+-- class, mixin = require("tagen.class")
+--
+-- Dependencies: `tagen.core` `tagen.tablex`
+-- global: Object
+
 local tagen = require "tagen.core"
+local tablex = require "tagen.tablex"
 
 -- ¤class
-local function _create_class(name, super)
-  local c = {name = name, super = super}
+local function class(name, superclass)
+  superclass = superclass or Object
+  local c = {name = name, superclass = superclass} 
+  c.__mixins = {} -- {<mixin>=true, ..}
   c.__methods = {}
   c.__instance_methods = {}
   local mt = {
@@ -26,12 +34,14 @@ local function _create_class(name, super)
     __newindex = c.__instance_methods,
 
     -- User
+    ---[[
     __tostring = function(t)
       return t.name
     end,
+    --]]
   }
 
-  local methods_newindex = function(t, key, value)
+  local __methods_newindex = function(t, key, value)
     -- property
     local v = t["set_"..key]
     if v then return v(t, value) end
@@ -40,21 +50,34 @@ local function _create_class(name, super)
     return rawset(t, key, value)
   end
 
-  if super then
-    setmetatable(c.__methods, {__index = super.__methods, __newindex = methods_newindex})
-    setmetatable(c.__instance_methods, {__index = super.__instance_methods})
+  if superclass then
+    -- inherited
+    local inherited = superclass.__methods["inherited"]
+    if inherited then 
+      inherited(superclass, c)
+    end
+
+    setmetatable(c.__methods, {__index = superclass.__methods, __newindex = __methods_newindex})
+    setmetatable(c.__instance_methods, {__index = superclass.__instance_methods})
   else
-    setmetatable(c.__methods, {
-    __newindex = methods_newindex})
+    setmetatable(c.__methods, {__newindex = __methods_newindex})
   end
 
   return setmetatable(c, mt)
 end
 
-Object = _create_class("Object", nil)
+-- ¤Object
+Object = class("Object", nil)
 
 -- ¤instance
+
 -- self is User, not User.static. because User:new() -> User.static:new()
+function Object.static:new(...)
+  local instance = self:allocate()
+  instance:initialize(...)
+  return instance
+end
+
 function Object.static:allocate()
   local instance = {class = self}
   local mt = {
@@ -110,37 +133,47 @@ function Object.static:allocate()
   return setmetatable(instance, mt)
 end
 
-function Object.static:new(...)
-  local instance = self:allocate()
-  instance:initialize(...)
-  return instance
+function Object.static:super(...)
+  local name = debug.getinfo(2, "n").name
+  self.superclass.__methods[name](self, ...)
 end
 
-function Object.static:include(...)
-  for _, m in ipairs(...) do
-    for k, v in pairs(m) do
-      if k == "static" then
-        tagen.merge(self.__methods, v)
-      else
-        self.__instance_methods[k] = v
-      end
-    end
-  end
+--[[
+-- include methods and variables
+function Object.static:methods() 
+  return tablex.keys(self.__methods)
 end
+
+function Object.static:instance_methods() 
+  return tablex.keys(self.__instance_methods)
+end
+--]]
 
 function Object:initialize() end
 
 function Object:super(...) 
   local name = debug.getinfo(2, "n").name
-  self.class.super.__instance_methods[name](self, ...)
+  self.class.superclass.__instance_methods[name](self, ...)
 end
 
-local class = setmetatable({}, {
-  __call = function(func, name, super, ...)
-    local super = super or Object
-    local c = _create_class(name, super, ...)
-    return c
+function Object:instance_of(klass) 
+  return self.class == klass
+end
+
+function Object:kind_of(klass)
+  local c = self.class
+
+  while c do
+    if c == klass then 
+      return true 
+    elseif c.__mixins[klass] then
+      return true
+    end
+
+    c = c.superclass
   end
-})
+
+  return false
+end
 
 return class

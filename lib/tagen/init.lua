@@ -12,7 +12,7 @@ local modules = {
   config=true,pretty=true,data=true,func=true,text=true,
   operator=true,lapp=true,array2d=true,
   comprehension=true,xml=true,
-  test = true, app = true, file = true, class = true, list = true,
+  test = true, app = true, file = true, class = true, mixin = true, list = true,
   map = true, set = true, ordered_map = true, multi_map = true,
   date = true,
   -- classes --
@@ -30,7 +30,7 @@ end
 -- match
 
 local _hook,_prev_index
-local gmt = {}
+local gmt = {} -- _G's mt
 local prev_gmt = getmetatable(_G)
 if prev_gmt then
   _prev_index = prev_gmt.__index
@@ -43,13 +43,14 @@ function gmt.hook(handler)
   _hook = handler
 end
 
-function gmt.__index(t,name)
+function gmt.__index(t, name)
   local found = modules[name]
   -- either true, or the name of the module containing this class.
   -- either way, we load the required module and make it globally available.
   if found then
     -- e..g pretty.dump causes tagen.pretty to become available as 'pretty'
-    rawset(_G,name,require('tagen.'..name))
+    -- compablity with return class, mixin
+    rawset(_G, name, require('tagen.'..name))
     return _G[name]
   else
     local res
@@ -63,6 +64,6 @@ function gmt.__index(t,name)
   end
 end
 
-setmetatable(_G,gmt)
+setmetatable(_G, gmt)
 
-if rawget(_G,'PENLIGHT_STRICT') then require 'tagen.strict' end
+if rawget(_G, 'PENLIGHT_STRICT') then require 'tagen.strict' end

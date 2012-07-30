@@ -2,7 +2,7 @@
 --
 -- See @{02-arrays.md.Useful_Operations_on_Tables|the Guide}
 --
--- Dependencies: `tagen.core`
+-- Dependencies: `tagen.core`, Set, List, Map
 -- @module tagen.tablex
 local tagen = require ('tagen.core')
 local getmetatable,setmetatable,require = getmetatable,setmetatable,require
