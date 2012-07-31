@@ -497,5 +497,3 @@ function array2d.new(rows,cols,val)
 end
 
 return array2d
-
-

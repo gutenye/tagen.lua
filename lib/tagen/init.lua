@@ -1,29 +1,30 @@
 --------------
 -- Entry point for loading all PL libraries only on demand.
--- Requiring 'tagen' means that whenever a module is implicitly accesssed
+-- Requiring "tagen" means that whenever a module is implicitly accesssed
 -- (e.g. `tagen.split`)
 -- then that module is dynamically loaded. The submodules are all brought into
 -- the global space.
 -- @module tagen
 
 local modules = {
-  tagen = true,path=true,dir=true,tablex=true,stringio=true,sip=true,
-  input=true,seq=true,lexer=true,stringx=true,
-  config=true,pretty=true,data=true,func=true,text=true,
-  operator=true,lapp=true,array2d=true,
-  comprehension=true,xml=true,
-  test = true, app = true, file = true, class = true, mixin = true, list = true,
-  map = true, set = true, ordered_map = true, multi_map = true,
-  date = true,
-  -- classes --
+  core="tagen", path="path", dir="dir", tablex="tablex", stringio="stringio", sip="sip",
+  input="input", seq="seq", lexer="lexer", stringx="stringx",
+  config="config", pretty="pretty", data="data", func="func", text="text",
+  operator="operator", lapp="lapp", array2d="array2d",
+  comprehension="comprehension", xml="xml",
+  test="test", app="app", file="file", class="class", mixin="mixin", Array="array",
+  Map="map", Set="set", OrderedMap="ordered_map", MultiMap="multi_map",
+  date="date"
 }
-_G.tagen = require 'tagen.core'
+_G.tagen = require("tagen.core")
 
+--[[
 for name,klass in pairs(_G.tagen.stdmt) do
   klass.__index = function(t,key)
-    return require ('tagen.'..name)[key]
+    return require ("tagen."..name)[key]
   end;
 end
+--]]
 
 -- ensure that we play nice with libraries that also attach a metatable
 -- to the global table; always forward to a custom __index if we don't
@@ -44,13 +45,13 @@ function gmt.hook(handler)
 end
 
 function gmt.__index(t, name)
-  local found = modules[name]
+  local fname = modules[name]
   -- either true, or the name of the module containing this class.
   -- either way, we load the required module and make it globally available.
-  if found then
-    -- e..g pretty.dump causes tagen.pretty to become available as 'pretty'
+  if fname then
+    -- e..g pretty.dump causes tagen.pretty to become available as "pretty"
     -- compablity with return class, mixin
-    rawset(_G, name, require('tagen.'..name))
+    rawset(_G, name, require("tagen."..fname))
     return _G[name]
   else
     local res
@@ -66,4 +67,4 @@ end
 
 setmetatable(_G, gmt)
 
-if rawget(_G, 'PENLIGHT_STRICT') then require 'tagen.strict' end
+if rawget(_G, "PENLIGHT_STRICT") then require("tagen.strict") end

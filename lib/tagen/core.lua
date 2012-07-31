@@ -2,6 +2,9 @@
 -- See  @{01-introduction.md.Generally_useful_functions|the Guide}.
 --
 -- @module tagen.core
+BREAK = {}
+RETURN = {}
+
 local clock = os.clock
 local stdout = io.stdout
 
@@ -11,7 +14,6 @@ local tagen = {
 }
 local global = {}
 local lua51 = rawget(_G,'setfenv')
-
 
 tagen.lua51 = lua51
 if not lua51 then -- Lua 5.2 compatibility
@@ -329,6 +331,22 @@ function tagen.is_type (obj,tp)
   if type(tp) == 'string' then return type(obj) == tp end
   local mt = getmetatable(obj)
   return tp == mt
+end
+
+function tagen.instance_of(obj, klass)
+  if type(obj) == "table" and obj.instance_of then
+    return obj:instance_of(klass)
+  else
+    return false
+  end
+end
+
+function tagen.kind_of(obj, klass)
+  if type(obj) == "table" and obj.kind_of then
+    return obj:kind_of(klass)
+  else
+    return false
+  end
 end
 
 local fileMT = getmetatable(io.stdout)

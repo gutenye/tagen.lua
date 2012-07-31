@@ -24,7 +24,7 @@ local function _include(klass, mixin)
   for k, v in pairs(mixin) do
     if k == "name" then 
       -- continue
-    elseif k == "static" then
+    elseif k == "def" then
       for k2,v2 in pairs(v) do
         if k2 == "included" then
           v2(klass)
@@ -40,7 +40,7 @@ local function _include(klass, mixin)
   klass.__mixins[mixin] = true
 end
 
-function Object.static:include(...)
+function Object.def:include(...)
   local args = table.pack(...)
 
   for i=1, args.n do

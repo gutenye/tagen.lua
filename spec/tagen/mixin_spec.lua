@@ -17,9 +17,9 @@ describe ["mixin"] = function()
 
   it ["includes class methods"] = function()
     Fooable = mixin("Fooable", {
-      static = {
+      def = {
         foo = function(self)
-          self.static.age = 1
+          self.var.age = 1
           return "User.foo"
         end
       }
@@ -46,11 +46,11 @@ describe ["mixin"] = function()
     expect(user.age).to_equal(1)
   end
 
-  it ["called static.included method"] = function()
+  it ["called def.included method"] = function()
     Fooable = mixin("Fooable", {
-      static = {
+      def = {
         included = function(self)
-          self.static.age = 1
+          self.var.age = 1
         end
       }
     })
