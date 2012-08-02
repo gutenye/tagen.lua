@@ -10,7 +10,7 @@ local modules = {
   core="tagen", path="path", dir="dir", tablex="tablex", stringio="stringio", sip="sip",
   input="input", seq="seq", lexer="lexer", stringx="stringx",
   config="config", pretty="pretty", data="data", func="func", text="text",
-  operator="operator", lapp="lapp", array2d="array2d",
+  operator="operator", lapp="lapp",
   comprehension="comprehension", xml="xml",
   test="test", app="app", file="file", class="class", mixin="mixin", Array="array",
   Map="map", Set="set", OrderedMap="ordered_map", MultiMap="multi_map",

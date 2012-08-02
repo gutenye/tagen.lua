@@ -96,6 +96,15 @@ local function class(name, superclass)
 
     __newindex = klass.__instance_methods,
 
+    __call = function(klass, ...)
+      local mth = klass.__methods["__call"]
+      if mth then
+        return mth(klass, ...)
+      else
+        error("attempt to call global '"..tostring(klass).."' (a table value)", 2)
+      end
+    end,
+
     -- User
     --[[
     __tostring = function(t)
@@ -151,7 +160,7 @@ end
 
 function Object.def:allocate()
   local klass = self
-  local instance = {class=klass}
+  local instance = {class=klass, __IS_OBJECT=true}
   instance.__instance_variables = {}
   instance.__object_methods = {}
 
@@ -192,10 +201,6 @@ function Object:object_methods()
   return self.__object_methods
 end
 
-function Object:instance_of(klass) 
-  return self.class == klass
-end
-
 function Object:kind_of(klass)
   local c = self.class
 
@@ -228,5 +233,8 @@ function Object:__tostring()
 
   return ret .. ">"
 end
+
+Object.to_s = Object.__tostring
+Object.inspect = Object.__tostring
 
 return class

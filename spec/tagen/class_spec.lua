@@ -198,84 +198,49 @@ describe ["class"] = function()
 
 
   describe ["metamethods"] = function()
-    before = function()
-      User = class("User")
-      Student = class("Student", User)
-      Child = class("Child", Student)
-    end
-
-    it ["will invoke when defined as an instance_method"] = function()
-      function User:__add()
-        return "User#__add"
+    describe ["(class)"] = function()
+      before = function()
+        User = class("User")
       end
 
-      user = User:new()
-      expect(user+1).to_equal("User#__add")
+      it ["have __call"] = function()
+        function User.def:__call() 
+          return "User.__call"
+        end
+
+        expect(User()).to_equal("User.__call")
+      end
     end
 
-    it ["supports inheritance"] = function()
-      function User:__add()
-        return "User#__add"
+    describe ["(instance)"] = function()
+      before = function()
+        User = class("User")
+        Student = class("Student", User)
+        Child = class("Child", Student)
       end
 
-      child = Child:new()
-      expect(child+1).to_equal("User#__add")
+      it ["will invoke when defined as an instance_method"] = function()
+        function User:__add()
+          return "User#__add"
+        end
+
+        user = User:new()
+        expect(user+1).to_equal("User#__add")
+      end
+
+      it ["supports inheritance"] = function()
+        function User:__add()
+          return "User#__add"
+        end
+
+        child = Child:new()
+        expect(child+1).to_equal("User#__add")
+      end
     end
   end
 end
 
 describe ["Object"] = function()
-  describe ["#instance_of"] = function()
-    before = function()
-      User = class("User")
-      user = User:new()
-    end
-
-    it ["return true if user was created from User"] = function()
-      expect(user:instance_of(User)).to_equal(true)
-    end
-
-    it ["return false otherwise"] = function()
-      expect(user:instance_of(Object)).to_equal(false)
-    end
-  end
-
-  describe ["#kind_of"] = function()
-    before = function()
-      User = class("User")
-      Userable = mixin("Userable")
-      Student = class("Student", User)
-      Studentable = mixin("Studentable")
-      Foo = class("Foo")
-      Fooable = class("Fooable")
-
-      User:include(Userable)
-      Student:include(Studentable)
-      student = Student:new()
-    end
-
-    it ["return true if x was create from it's class"] = function()
-      expect(student:kind_of(Student)).to_equal(true)
-    end
-
-    it ["return true if x is in it's inheritance"] = function()
-      expect(student:kind_of(User)).to_equal(true)
-    end
-
-    it ["return true if x is a module included by it's class"] = function()
-      expect(student:kind_of(Studentable)).to_equal(true)
-    end
-
-    it ["return true if x is a module included by it's acenstores"] = function()
-      expect(student:kind_of(Userable)).to_equal(true)
-    end
-
-    it ["return false otherwise"] = function()
-      expect(student:kind_of(Foo)).to_equal(false)
-      expect(student:kind_of(Fooable)).to_equal(false)
-    end
-  end
-
   describe [".methods"] = function()
     before = function()
       User = class("User")

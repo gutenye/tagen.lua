@@ -1,53 +1,81 @@
 --- Ruby-style Array class.
 --
--- **Please Note**: methods that change the list will return the list.
--- This is to allow for method chaining, but please note that `ls = ls:sort()`
--- does not mean that a new copy of the list is made. In-place (mutable) methods
--- are marked as returning 'the list' in this documentation.
---
 -- See the Guide for further @{02-arrays.md.Python_style_Arrays|discussion}
 --
--- See <a href="http://www.python.org/doc/current/tut/tut.html">http://www.python.org/doc/current/tut/tut.html</a>, section 5.1
+-- Note: 
+--  1. use ary#length() instead of #ary
+--  2. use ary#insert, #delete_at instead of table.insert, remove
 --
--- **Note**: The comments before some of the functions are from the Python docs
--- and contain Python code.
---
--- Written for Lua version Nick Trout 4.0; Redone for Lua 5.1, Steve Donovan.
---
--- Dependencies: `tagen.core`, `tagen.class`, `tagen.tablex`
+-- Dependencies: `tagen.core`, `tagen.class`, `tagen.mixin`
 -- @module tagen.list
 -- @pragma nostrip
 
 local tagen = require "tagen.core"
 local class = require "tagen.class"
 local mixin = require "tagen.mixin"
+local assert_arg = tagen.assert_arg
 
 local Array = class("Array")
 
-function Array:__call(t)
-  return Array:new(t)
+function Array.def:__call(obj)
+  return Array:new(obj)
 end
 
 -- (table),(array)
-function Array:initialize(t)
-  for i=1, #t do
-    table.insert(self, t[i])
+function Array:initialize(obj)
+  obj = obj or {}
+  local len
+
+  if tagen.instance_of(obj, Array) then
+    len = obj:length()
+  else
+    len = #obj
   end
+
+  for i=1,len do
+    table.insert(self.__instance_variables, obj[i])
+  end
+end
+
+function Array:dup()
+  return Array:new(self)
 end
 
 function Array:replace(ary)
   self.__instance_variables = ary.__instance_variables
 end
 
+-- to nil
+function Array:length()
+  return #self.__instance_variables
+end
+
+Array.size = Array.length
+
 function Array:__tostring()
-  return "[" .. table.concat(self, ", ") .. "]"
+  return "[" .. table.concat(self:map(tagen.inspect).__instance_variables, ", ") .. "]"
+end
+
+Array.to_s = Array.__tostring
+Array.inspect = Array.__tostring
+
+function Array:__eq(other)
+  if not tagen.kind_of(other, Array) then return false end
+
+  if self:length() ~= other:length() then return false end
+
+  for i=1,self:length() do
+    if self[i] ~= other[i] then return false end
+  end
+
+  return true
 end
 
 function Array:__add(other)
   local ary = Array:new(self)
 
-  for i=1,#others do
-    table.insert(ary, others[i])
+  for i=1,other:length() do
+    ary:append(other[i])
   end
 
   return ary
@@ -56,14 +84,8 @@ end
 Array.__concat = Array.__add
 Array.concat = Array.__add
 
-function Array:length()
-  return #self
-end
-
-Array.size = Array.length
-
 function Array:is_empty()
-  if self.length() == 0 then
+  if self:length() == 0 then
     return true
   else
     return false
@@ -71,11 +93,13 @@ function Array:is_empty()
 end
 
 function Array:includes(obj)
-  for i=1,#self do
+  for i=1,self:length() do
     if self[i] == obj then
       return true
     end
   end
+
+  return false
 end
 
 Array.contains = Array.includes
@@ -86,7 +110,7 @@ function Array:count(obj)
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
 
   local count = 0
-  for i=1,#self do
+  for i=1,self:length() do
     if func(self[i]) then
       count = count + 1
     end
@@ -99,17 +123,20 @@ end
 -- support -1
 function Array:slice(index, count)
   count = count or 1
+  assert_arg(1, index, "number")
+  assert_arg(2, count, "number")
   local ary = Array:new()
-  local is_ok = false
 
   if index < 0 then
-    index = #self + index + 1
+    index = self:length() + index + 1
   end
 
-  for i=1,#self do
+  local j = count + index
+
+  for i=1,self:length() do
     if i >= index then 
-      if i < count + i then
-        table.insert(self, self[i])
+      if i < j then
+        ary:append(self[i])
       else
         break
       end
@@ -120,10 +147,14 @@ function Array:slice(index, count)
 end
 
 function Array:slice1(index, count)
-  self:replace(self:slice(index, count))
+  count = count or 1
+  assert_arg(1, index, "number")
+  assert_arg(2, count, "number")
+  return self:replace(self:slice(index, count))
 end
 
 function Array:at(index)
+  assert_arg(1, index, "number")
   if index < 0 then
     index = self:length() + index + 1
   end
@@ -133,6 +164,7 @@ end
 
 -- fetch(index, default=nil)
 function Array:fetch(index, default)
+  assert_arg(1, index, "number")
   local v = self:at(index)
   if v == nil then
     return default
@@ -146,7 +178,7 @@ function Array:first()
 end
 
 function Array:last()
-  return self[#self]
+  return self[self:length()]
 end
 
 -- (*index)
@@ -155,18 +187,18 @@ function Array:values_at(...)
   local args = table.pack(...)
 
   for i=1,args.n do
-    table.insert(ary, self:at(args[i]))
+    ary:append(self:at(args[i]))
   end
 
   return ary
 end
 
--- (obj),(func)
+-- (obj),(func) =>nil
 function Array:index(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
 
-  for i=1,#self do
+  for i=1,self:length() do
     if func(self[i]) then
       return i
     end
@@ -179,7 +211,7 @@ function Array:rindex(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
 
-  for i=#self,1,-1 do
+  for i=self:length(),1,-1 do
     if func(self[i]) then
       return i
     end
@@ -194,9 +226,9 @@ local function _insert(self, index, ...)
 
   for i=1,args.n do
     if index == nil then
-      table.insert(self, args[i])
+      table.insert(self.__instance_variables, args[i])
     else
-      table.insert(self, index, args[i])
+      table.insert(self.__instance_variables, index, args[i])
       index = index + 1
     end
   end
@@ -204,6 +236,7 @@ end
 
 -- insert(index, obj...)
 function Array:insert(index, ...)
+  assert_arg(1, index, "number")
   return _insert(self, index, ...)
 end
 
@@ -219,47 +252,87 @@ function Array:unshift(...)
 end
 
 -- for pop, shift
-local function _pop(self, n, pos)
-  n = n or 1
-  local ary = Array:new()
+local function _pop(ary, n, is_last)
+  local ret = Array:new()
   local v
 
-  for i=i,n do
-    if pos == nil then
-      v = table.remove(self)
+  for i=1,n do
+    if is_last then
+      v = ary:delete_at(ary:length() - n + i)
     else
-      v = table.remove(self, pos)
+      v = ary:delete_at(1)
     end
 
-    table.insert(ary, v)
+    ret:append(v)
   end
 
   if n == 1 then
-    return ary[1]
+    return ret[1]
   else
-    return ary
+    return ret
   end
 end
 
+-- pop(n=1)
 function Array:pop(n)
-  return _pop(self, n, nil)
+  n = n or 1
+  assert_arg(1, n, "number")
+  return _pop(self, n, true)
 end
 
+-- shift(n=1)
 function Array:shift(n)
-  return _pop(self, n, 1)
+  n = n or 1
+  assert_arg(1, n, "number")
+  return _pop(self, n, false)
 end
 
--- for each each_index
-local function _each(func, is_index)
+function Array:delete_at(index)
+  assert_arg(1, index, "number")
+  return table.remove(self.__instance_variables, index)
+end
+
+-- delete(obj)
+-- delete(obj, func)
+function Array:delete(obj, func)
+  if type(func) ~= "function" then func = function() return nil end end
+
+  for i=1,self:length() do
+    if self[i] == obj then
+      return self:delete_at(i)
+    end
+  end
+
+  return func()
+end
+
+function Array:delete_if(func)
+  local i = 1
+  while i <= self:length() do
+    if func(self[i]) then
+      self:delete_at(i)
+    else
+      i = i +1
+    end
+  end
+
+  return self
+end
+
+function Array:clear()
+  self.__instance_variables = {}
+
+  return self
+end
+
+-- each()
+-- each(func{v, i})
+function Array:each(func)
   if func == nil then return Enumerator:new(self) end
 
   local ret, a,b,c
-  for i=1,#self do
-    if is_index then
-      ret, a,b,c = func(i)
-    else
-      ret, a,b,c = func(self[i])
-    end
+  for i=1,self:length() do
+    ret, a,b,c = func(self[i], i)
     if ret == BREAK then
       break
     elseif ret == RETURN then
@@ -268,34 +341,94 @@ local function _each(func, is_index)
   end
 end
 
--- each()
--- each(func{v})
-function Array:each(func)
-  return _each(func, false)
-end
+-- map(func{v,i})
+function Array:map1(func)
+  for i=1,self:length() do
+    self[i] = func(self[i], i)
+  end
 
--- each_index()
--- each_index(func{i})
-function Array:each_index(func)
-  return _each(func, true)
+  return self
 end
 
 function Array:map(func)
-  local ary = Array:new(self)
+  return self:dup():map1(func)
+end
 
-  for i=1,#self do
-    ary[i] = func(self[i])
+Array.collect1 = Array.map1
+Array.collect = Array.map
+
+-- join(sep="")
+--
+-- remove nil, call tagen.to_s
+function Array:join(sep)
+  sep = sep or ""
+  assert_arg(1, sep, "string")
+
+  return table.concat(self:map(tagen.to_s).__instance_variables, sep)
+end
+
+function Array:reverse()
+  local ary = Array:new()
+
+  for i=self:length(),1,-1 do
+    ary:append(self[i])
   end
 
   return ary
 end
 
-function Array:map1(func)
-  self:replace(self:map(func))
+function Array:reverse1()
+  local i, j =1, self:length()
+  local tmp
+
+  while i < j do
+    tmp = self[i]
+    self[i] = self[j]
+    self[j] = tmp
+    i = i+1
+    j = j-1
+  end
+
   return self
 end
 
-Array.collect = Array.map
-Array.collect1 = Array.map1
+--[[ need ordered_table
+local function _make_hash(ary)
+  local hash = {}
+
+  for i=1,ary:length() do
+    --hash[ary[i = true
+  end
+
+  return hash
+end
+
+function Array:uniq1()
+  local hash = _make_hash(self)
+
+  self:clear()
+
+  for k,v in pairs(hash) do
+    self:append(k)
+  end
+
+  return self
+end
+
+function Array:uniq()
+  return self:dup():uniq1()
+end
+--]]
+
+-- sort1()
+-- sort1(func)
+function Array:sort1(func)
+  table.sort(self.__instance_variables, func)
+  return self
+end
+
+function Array:sort(func)
+  return self:dup():sort1(func)
+end
 
 return Array

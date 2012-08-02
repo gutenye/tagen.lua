@@ -333,21 +333,6 @@ function tagen.is_type (obj,tp)
   return tp == mt
 end
 
-function tagen.instance_of(obj, klass)
-  if type(obj) == "table" and obj.instance_of then
-    return obj:instance_of(klass)
-  else
-    return false
-  end
-end
-
-function tagen.kind_of(obj, klass)
-  if type(obj) == "table" and obj.kind_of then
-    return obj:kind_of(klass)
-  else
-    return false
-  end
-end
 
 local fileMT = getmetatable(io.stdout)
 
@@ -541,7 +526,67 @@ end
 
 raise = tagen.raise
 
--- ¤table
+-- ¤Object
+function tagen.is_object(obj)
+  if type(obj) == "table" and obj.__IS_OBJECT then
+    return true
+  else
+    return false
+  end
+end
+
+function tagen.instance_of(obj, klass)
+  if tagen.is_object(obj) then
+    return obj.class == klass
+
+  else
+    return false
+  end
+end
+
+local function _kind_of(obj, klass)
+  local c = obj.class
+
+  while c do
+    if c == klass then 
+      return true 
+    elseif c.__mixins[klass] then
+      return true
+    end
+
+    c = c.superclass
+  end
+
+  return false
+end
+
+function tagen.kind_of(obj, klass)
+  if tagen.is_object(obj) then
+    return _kind_of(obj, klass)
+  else
+    return false
+  end
+end
+
+function tagen.to_s(obj)
+  if obj == nil then
+    return ""
+  elseif tagen.is_object(obj) and obj.to_s then
+    return obj:to_s()
+  else
+    return tostring(obj)
+  end
+end
+
+function tagen.inspect(obj)
+  if type(obj) == "string" then
+    return string.format("%q", obj)
+  elseif tagen.is_object(obj) and obj.inspect then
+    return obj:inspect()
+  else
+    return tostring(obj)
+  end
+end
 
 -- table merge util.
 -- @protected
@@ -909,7 +954,10 @@ tagen.dir = Pretty:new { compact=false, depth=1, key="%-20s",
 tagen.pd = tagen.p
 
 -- fill global
-local globals = {"p", "pd", "ls", "dir", "printf", "sprintf", "quit", "alias", "require_relative"}
+local globals = {
+  "p", "pd", "ls", "dir", "printf", "sprintf", "quit",
+  "assert_arg",
+}
 for _, meth in ipairs(globals) do
   global[meth] = tagen[meth]
 end
