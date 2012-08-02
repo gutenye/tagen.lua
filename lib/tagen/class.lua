@@ -181,6 +181,44 @@ end
 
 -- ¤Object
 
+function Object.def:alias(new, old)
+  local meth = self.__methods[old]
+
+  if meth == nil then
+    error("class method '"..old.."' not found in '"..tostring(self).."'", 2)
+  end
+
+  self.__methods[new] = meth
+end
+
+-- instance alias
+function Object.def:ialias(new, old)
+  local meth = self.__instance_methods[old]
+
+  if meth == nil then
+    error("instance method '"..old.."' not found in '"..tostring(self).."'", 2)
+  end
+
+  self.__instance_methods[new] = meth
+end
+
+function Object.def:method(name)
+  return self.__methods[name]
+end
+
+function Object.def:instance_method(name)
+  return self.__instance_methods[name]
+end
+
+function Object:method(name)
+  local meth = self.__object_methods[name]
+  if meth ~= nil then
+    return meth
+  else
+    return self.class.__instance_methods[name]
+  end
+end
+
 function Object.def:class_variables()
   return self.__class_variables
 end
@@ -234,7 +272,7 @@ function Object:__tostring()
   return ret .. ">"
 end
 
-Object.to_s = Object.__tostring
-Object.inspect = Object.__tostring
+Object:ialias("to_s", "__tostring")
+Object:ialias("inspect", "__tostring")
 
 return class

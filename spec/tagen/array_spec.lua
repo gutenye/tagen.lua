@@ -53,6 +53,15 @@ describe ["Array"] = function()
       expect(a == c).to_be_false()
     end
 
+    it ["return true if array is multi-dimensional"] = function()
+      a = Array:new({1, Array:new{11, 12, Array:new{22}}, 2})
+      b = Array:new({1, Array:new{11, 12, Array:new{22}}, 2})
+      c = Array:new({1, Array:new{11, 12, Array:new{23}}, 2})
+
+      expect(a == b).to_be_true()
+      expect(a == c).to_be_false()
+    end
+
     it ["return false otherwise"] = function()
       a = Array:new({1, 2})
       b = Array:new({1, 2, 3})
@@ -143,17 +152,17 @@ describe ["Array"] = function()
     end
   end
 
-  describe ["#includes"] = function()
+  describe ["#include"] = function()
     it ["return true if obj is included in array"] = function()
       a = Array:new{1, 2}
 
-      expect(a:includes(1)).to_be_true()
+      expect(a:include(1)).to_be_true()
     end
 
     it ["return false otherwise"] = function()
       a = Array:new{1, 2}
 
-      expect(a:includes(3)).to_be_false()
+      expect(a:include(3)).to_be_false()
     end
   end
 
@@ -250,6 +259,19 @@ describe ["Array"] = function()
 
       expect(a:first()).to_equal(11)
     end
+
+    it ["return first n items"] = function()
+      a = Array:new{11, 12, 13}
+      b = Array:new{11, 12}
+
+      expect(a:first(2)).to_equal(b)
+    end
+
+    it ["return all items if n > ary.length"] = function()
+      a = Array:new{11, 12, 13}
+
+      expect(a:first(10)).to_equal(a)
+    end
   end
 
   describe ["#last"] = function()
@@ -257,6 +279,19 @@ describe ["Array"] = function()
       a = Array:new{11, 12}
 
       expect(a:last()).to_equal(12)
+    end
+
+    it ["return last n items"] = function()
+      a = Array:new{11, 12, 13}
+      b = Array:new{12, 13}
+
+      expect(a:last(2)).to_equal(b)
+    end
+
+    it ["return all items if n > ary.length"] = function()
+      a = Array:new{11, 12, 13}
+
+      expect(a:last(10)).to_equal(a)
     end
   end
 

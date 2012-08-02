@@ -158,4 +158,22 @@ describe["tagen"] = function()
       expect(tagen.inspect(true)).to_equal("true")
     end
   end
+
+  describe [".comp"] = function()
+    it ["return 1 when a > b"] = function()
+      expect(tagen.comp(2, 1)).to_equal(1)
+      expect(tagen.comp("b", "a")).to_equal(1)
+    end
+
+    it ["return 0 when a == b"] = function()
+      expect(tagen.comp(1, 1)).to_equal(0)
+      expect(tagen.comp("a", "a")).to_equal(0)
+    end
+
+    it ["return -1 when a < b"] = function()
+      expect(tagen.comp(1, 2)).to_equal(-1)
+      expect(tagen.comp("a", "b")).to_equal(-1)
+    end
+  end
 end
+

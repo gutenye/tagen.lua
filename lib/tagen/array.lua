@@ -6,22 +6,48 @@
 --  1. use ary#length() instead of #ary
 --  2. use ary#insert, #delete_at instead of table.insert, remove
 --
--- Dependencies: `tagen.core`, `tagen.class`, `tagen.mixin`
+-- Dependencies: `tagen.core`, `tagen.class`, `tagen.mixin`, `tagen.enumerable`
 -- @module tagen.list
 -- @pragma nostrip
 
 local tagen = require "tagen.core"
 local class = require "tagen.class"
 local mixin = require "tagen.mixin"
+local Enumerable = require ("tagen.enumerable")
 local assert_arg = tagen.assert_arg
 
 local Array = class("Array")
 
+original__index = Array.__instance_methods["__index"]
+original__newindex = Array.__instance_methods["__newindex"]
+
+-- index support -1
+Array.__instance_method["__index"] = function(self, key)
+  if type(key) == "number" and key < 0 then
+    key = self:length() + key + 1 
+  end
+
+  return original__index(self, key)
+end
+
+Array.__instance_method["__newindex"] = function(self, key, value)
+  if type(key) == "number" and key < 0 then
+    key = self:length() + key + 1 
+  end
+
+  return original__newindex(self, key, value)
+end
+
+Array.include(Enumerable)
+
+-- Array(table)
+-- Array(array)
 function Array.def:__call(obj)
   return Array:new(obj)
 end
 
--- (table),(array)
+-- initialize()
+-- initialize(table/array)
 function Array:initialize(obj)
   obj = obj or {}
   local len
@@ -50,14 +76,14 @@ function Array:length()
   return #self.__instance_variables
 end
 
-Array.size = Array.length
+Array:ialias("size", "length")
 
 function Array:__tostring()
   return "[" .. table.concat(self:map(tagen.inspect).__instance_variables, ", ") .. "]"
 end
 
-Array.to_s = Array.__tostring
-Array.inspect = Array.__tostring
+Array:ialias("to_s", "__tostring")
+Array:ialias("inspect", "__tostring")
 
 function Array:__eq(other)
   if not tagen.kind_of(other, Array) then return false end
@@ -71,7 +97,7 @@ function Array:__eq(other)
   return true
 end
 
-function Array:__add(other)
+function Array:__concat(other)
   local ary = Array:new(self)
 
   for i=1,other:length() do
@@ -81,8 +107,8 @@ function Array:__add(other)
   return ary
 end
 
-Array.__concat = Array.__add
-Array.concat = Array.__add
+Array:ialias("__add", "__concat")
+Array:ialias("concat", "__concat")
 
 function Array:is_empty()
   if self:length() == 0 then
@@ -92,7 +118,7 @@ function Array:is_empty()
   end
 end
 
-function Array:includes(obj)
+function Array:include(obj)
   for i=1,self:length() do
     if self[i] == obj then
       return true
@@ -102,7 +128,7 @@ function Array:includes(obj)
   return false
 end
 
-Array.contains = Array.includes
+Array:ialias("contains", "include")
 
 -- (obj), (func)
 function Array:count(obj)
@@ -155,9 +181,7 @@ end
 
 function Array:at(index)
   assert_arg(1, index, "number")
-  if index < 0 then
-    index = self:length() + index + 1
-  end
+  if index < 0 then index = self:length() + index + 1 end
 
   return self[index]
 end
@@ -172,13 +196,42 @@ function Array:fetch(index, default)
     return v
   end
 end
+Array.ialias("get", "fetch")
 
-function Array:first()
-  return self[1]
+
+
+
+
+-- first(n=1)
+function Array:first(n)
+  n = n or 1
+
+  if n == 1 then
+    return self[1]
+  else
+    n = math.min(n, self:length())
+    local ary = Array:new()
+    for i=1,n do
+      ary:push(self[i])
+    end
+    return ary
+  end
 end
 
-function Array:last()
-  return self[self:length()]
+-- last(n=1)
+function Array:last(n)
+  n = n or 1
+
+  if n == 1 then
+    return self[self:length()]
+  else
+    n = math.max(self:length()-n+1, 0)
+    local ary = Array:new()
+    for i=n,self:length() do
+      ary:push(self[i])
+    end
+    return ary
+  end
 end
 
 -- (*index)
@@ -245,7 +298,7 @@ function Array:append(...)
   return _insert(self, nil, ...)
 end
 
-Array.push = Array.append
+Array:ialias("push", "append")
 
 function Array:unshift(...)
   return _insert(self, 1, ...)
@@ -328,7 +381,7 @@ end
 -- each()
 -- each(func{v, i})
 function Array:each(func)
-  if func == nil then return Enumerator:new(self) end
+  if func == nil then return self.to_enum() end
 
   local ret, a,b,c
   for i=1,self:length() do
@@ -354,8 +407,8 @@ function Array:map(func)
   return self:dup():map1(func)
 end
 
-Array.collect1 = Array.map1
-Array.collect = Array.map
+Array:ialias("collect1", "map1")
+Array:ialias("collect", "map")
 
 -- join(sep="")
 --

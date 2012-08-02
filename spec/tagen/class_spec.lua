@@ -240,7 +240,90 @@ describe ["class"] = function()
   end
 end
 
+-- ¤Object
 describe ["Object"] = function()
+  describe [".alias"] = function()
+    it ["a class method"] = function()
+      User = class("User")
+      function User.def:foo()
+        return "User.foo"
+      end
+
+      User:alias("bar", "foo")
+      expect(User:bar()).to_equal("User.foo")
+    end
+  end
+
+  describe [".ialias"] = function()
+    it ["an instance method"] = function()
+      User = class("User")
+      function User:foo()
+        return "User#foo"
+      end
+
+      User:ialias("bar", "foo")
+      user = User:new()
+      expect(user:bar()).to_equal("User#foo")
+    end
+  end
+
+  describe [".method"] = function()
+    before = function()
+      User = class("User")
+    end
+
+    it ["return a class method"] = function()
+      function User.def:foo() end
+
+      expect(type(User:method("foo"))).to_equal("function")
+    end
+
+    it ["return nil if not found"] = function()
+      expect(User:method("foo")).to_be_nil()
+    end
+  end
+
+  describe [".instance_method"] = function()
+    before = function()
+      User = class("User")
+    end
+
+    it ["return an instance method"] = function()
+      function User:foo() end
+
+      expect(type(User:instance_method("foo"))).to_equal("function")
+    end
+
+    it ["return nil if not found"] = function()
+      expect(User:instance_method("foo")).to_be_nil()
+    end
+  end
+
+  describe ["#method"] = function()
+    before = function()
+      User = class("User")
+    end
+
+    it ["return a instance method"] = function()
+      function User:foo() end
+
+      user = User:new()
+      expect(type(user:method("foo"))).to_equal("function")
+    end
+
+    it ["return a object method"] = function()
+      user = User:new()
+      function user.def:foo() end
+
+      expect(type(user:method("foo"))).to_equal("function")
+    end
+
+    it ["return nil if not found"] = function()
+      user = User:new()
+      expect(user:method("foo")).to_be_nil()
+    end
+  end
+
   describe [".methods"] = function()
     before = function()
       User = class("User")

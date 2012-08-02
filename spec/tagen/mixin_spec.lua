@@ -1,45 +1,36 @@
 require "spec_helper"
 
+local User, Userable
+
 describe ["mixin"] = function()
   before = function()
     User = class("User")
+    Userable = mixin("Userable")
   end
 
   it ["have a name"] = function()
-    Fooable = mixin("Fooable")
-    expect(Fooable.name).to_equal("Fooable")
-  end
-
-  it ["#tostring"] = function()
-    Fooable = mixin("Fooable")
-    expect(tostring(Fooable)).to_equal("Fooable")
+    expect(Userable.name).to_equal("Userable")
   end
 
   it ["includes class methods"] = function()
-    Fooable = mixin("Fooable", {
-      def = {
-        foo = function(self)
-          self.var.age = 1
-          return "User.foo"
-        end
-      }
-    })
+    function Userable.def:foo()
+      self.var.age = 1
+      return "User.foo"
+    end
 
-    User:include(Fooable)
+    User:include(Userable)
 
     expect(User:foo()).to_equal("User.foo")
     expect(User.age).to_equal(1)
   end
 
   it ["includes instance methods"] = function()
-    Fooable = mixin("Fooable", {
-      foo = function(self)
-        self.age = 1
-        return "User#foo"
-      end
-    })
+    function Userable:foo()
+      self.age = 1
+      return "User#foo"
+    end
 
-    User:include(Fooable)
+    User:include(Userable)
     user = User:new()
 
     expect(user:foo()).to_equal("User#foo")
@@ -47,15 +38,11 @@ describe ["mixin"] = function()
   end
 
   it ["called def.included method"] = function()
-    Fooable = mixin("Fooable", {
-      def = {
-        included = function(self)
-          self.var.age = 1
-        end
-      }
-    })
+    function Userable.def:included()
+      self.var.age = 1
+    end
 
-    User:include(Fooable)
+    User:include(Userable)
 
     expect(User.age).to_equal(1)
   end

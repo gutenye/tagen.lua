@@ -2,40 +2,18 @@
 
 class = require("tagen.class")
 
--- @example
---   
---   Fooable = mixin("Fooable", {
---     ..
---   })
-local function mixin(name, mixin)
-  mixin = mixin or {}
-  mixin["name"] = name
-
-  local mt = {
-    __tostring = function(m)
-      return m.name
-    end
-  }
-
-  return setmetatable(mixin, mt)
+local function mixin(name)
+  mixin = class(name)
+  return mixin
 end
 
 local function _include(klass, mixin)
-  for k, v in pairs(mixin) do
-    if k == "name" then 
-      -- continue
-    elseif k == "def" then
-      for k2,v2 in pairs(v) do
-        if k2 == "included" then
-          v2(klass)
-        else
-          klass.__methods[k2] = v2
-        end
-      end
-    else
-      klass.__instance_methods[k] = v
-    end
+  if mixin:method("included") then
+    mixin.included(klass)
   end
+
+  tagen.merge(klass.__methods, mixin.__methods)
+  tagen.merge(klass.__instance_methods, mixin.__instance_methods)
 
   klass.__mixins[mixin] = true
 end
@@ -47,6 +25,5 @@ function Object.def:include(...)
     _include(self, args[i])
   end
 end
-
 
 return mixin
