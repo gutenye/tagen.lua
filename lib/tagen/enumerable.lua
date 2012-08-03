@@ -1,4 +1,4 @@
--- Note: implement each() need BREAK and RETURN.
+-- Note: implement each() need BREAK.
 -- Dependenies: `tagen.mixin` `tagen.enumerator`
 
 
@@ -10,7 +10,7 @@ local Enumerable = mixin("Enumerable")
 function Enumerable:include(obj)
   local ret = self:each(function(v)
     if v == obj then
-      return RETURN, true
+      return BREAK, true
     end
   end)
 
@@ -26,11 +26,10 @@ Enumerable:ialias("contains", "include")
 -- all(func)
 function Enumerable:all(func)
   func = func or function(v) return v end
-  local ret
 
-  ret = self:each(function(v)
+  local ret = self:each(function(v)
     if not func(v) then
-      return RETURN, false
+      return BREAK, false
     end
   end)
 
@@ -53,11 +52,10 @@ end
 -- any(func)
 function Enumerable:any(func)
   func = func or function(v) return v end
-  local ret
 
-  ret = self:each(function(v)
+  local ret = self:each(function(v)
     if func(v) then
-      return RETURN, true
+      return BREAK, true
     end
   end)
 
@@ -74,7 +72,7 @@ function Enumerable:one(func)
 
   self:each(function(v)
     if true_count > 1 then
-      return RETURN
+      return BREAK
     end
 
     if func(v) then
@@ -171,7 +169,7 @@ function Enumerable:each_cons(n, func)
     ary:push(v)
 
     if ary:length() == n then
-      func(ary)
+      func(ary:dup())
     end
   end)
 end
@@ -186,10 +184,14 @@ function Enumerable:each_slice(n, func)
     ary:push(v)
 
     if ary:length() == n then
-      func(ary)
+      func(ary:dup())
       ary:clear()
     end
   end)
+
+  if ary:length() > 0 then
+    func(ary)
+  end
 end
 
 -- first(n=1)
@@ -218,14 +220,18 @@ end
 function Enumerable:find(func)
   local found
 
-  self:each(function(...)
-    found = func(...) 
-    if found ~= nil then
-      return BREAK
+  ret = self:each(function(v, ...)
+    found = func(v, ...) 
+    if found then
+      return BREAK, v 
     end
   end)
 
-  return found
+  if found then
+    return ret
+  else
+    return nil
+  end
 end
 Enumerable:ialias("detect", "find")
 
@@ -233,10 +239,10 @@ function Enumerable:find_all(func)
   local found
   local ary = Array:new()
 
-  self:each(function(...)
-    found = func(...) 
-    if found ~= nil then
-      ary:push(found)
+  self:each(function(v, ...)
+    found = func(v, ...) 
+    if found then
+      ary:push(v)
     end
   end)
 
@@ -263,7 +269,11 @@ function Enumerable:find_index(arg)
     idx = (idx or 1) + 1
   end)
 
-  return idx
+  if found then
+    return idx
+  else
+    return nil
+  end
 end
 
 return Enumerable

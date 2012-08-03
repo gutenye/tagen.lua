@@ -22,7 +22,7 @@ original__index = Array.__instance_methods["__index"]
 original__newindex = Array.__instance_methods["__newindex"]
 
 -- index support -1
-Array.__instance_method["__index"] = function(self, key)
+Array.__instance_methods["__index"] = function(self, key)
   if type(key) == "number" and key < 0 then
     key = self:length() + key + 1 
   end
@@ -30,7 +30,7 @@ Array.__instance_method["__index"] = function(self, key)
   return original__index(self, key)
 end
 
-Array.__instance_method["__newindex"] = function(self, key, value)
+Array.__instance_methods["__newindex"] = function(self, key, value)
   if type(key) == "number" and key < 0 then
     key = self:length() + key + 1 
   end
@@ -196,11 +196,7 @@ function Array:fetch(index, default)
     return v
   end
 end
-Array.ialias("get", "fetch")
-
-
-
-
+Array:ialias("get", "fetch")
 
 -- first(n=1)
 function Array:first(n)
@@ -387,9 +383,7 @@ function Array:each(func)
   for i=1,self:length() do
     ret, a,b,c = func(self[i], i)
     if ret == BREAK then
-      break
-    elseif ret == RETURN then
-      return a,b,c
+      return a, b, c
     end
   end
 end

@@ -2,6 +2,10 @@
 local class = require("tagen.class")
 local Regexp = class("Regexp")
 
+function Regexp.def:__call(source)
+  return Regexp:new(source)
+end
+
 function Regexp:initialize(source)
   self.source = source
 end

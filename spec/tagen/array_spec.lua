@@ -27,6 +27,34 @@ describe ["Array"] = function()
   -- core methods
   --
 
+  describe ["#[]"] = function()
+    it ["return the index value"] = function()
+      a = Array:new({11, 12})
+      expect(a[2]).to_equal(12)
+    end
+
+    it ["support -1 index"] = function()
+      a = Array:new{11, 12, 13}
+      expect(a[-3]).to_equal(11)
+    end
+  end
+
+  describe ["#[]="] = function()
+    it ["set the index to the value"] = function()
+      a = Array:new{11, 12, 13}
+
+      a[3] = 9
+      expect(a[3]).to_equal(9)
+    end
+
+    it ["support -1 index"] = function()
+      a = Array:new{11, 12, 13}
+
+      a[-3] = 9
+      expect(a[1]).to_equal(9)
+    end
+  end
+
   describe ["#__tostring"] = function()
     it ["use inspect to print it's members"] = function()
       a = Array:new({"a", 1})
@@ -436,7 +464,7 @@ describe ["Array"] = function()
   end
 
   describe ["#clear"] = function() 
-    it ["clear all items"] = function()
+    it ["delete all items"] = function()
       a = Array:new{11, 12}
 
       a:clear()
@@ -462,27 +490,16 @@ describe ["Array"] = function()
       expect(d).to_equal(e)
     end
 
-
     it ["have BREAK"] = function()
       a = Array:new{11, 12}
       b = Array:new{}
-      c = Array:new{21}
-
-      a:each(function(v)
-        b:append(v+10)
-        return BREAK
-      end)
-
-      expect(b).to_equal(c)
-    end
-
-    it ["have RETURN"] = function()
-      a = Array:new{11, 12}
 
       ret, ret2 = a:each(function(v)
-        return RETURN, v+10, "ret2"
+        b:append(v+10)
+        return BREAK, v+10, "ret2"
       end)
 
+      expect(b).to_equal(Array:new{21})
       expect(ret).to_equal(21)
       expect(ret2).to_equal("ret2")
     end
