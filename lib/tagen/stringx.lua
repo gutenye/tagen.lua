@@ -11,6 +11,7 @@
 local tagen = require("tagen.core")
 local Array = require("tagen.array")
 local Regexp = require("tagen.regexp")
+local pd = tagen.pd
 local assert_arg = tagen.assert_arg
 
 local stringx = {}

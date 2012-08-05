@@ -14,6 +14,7 @@ local tagen = require "tagen.core"
 local class = require "tagen.class"
 local mixin = require "tagen.mixin"
 local Enumerable = require ("tagen.enumerable")
+local pd = tagen.pd
 local assert_arg = tagen.assert_arg
 
 local Array = class("Array")

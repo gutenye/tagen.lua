@@ -78,6 +78,7 @@ describe ["class"] = function()
     before = function()
       User = class("User")
       Student = class("Student", User)
+      Child = class("Child", Student)
     end
 
     it ["Object's superclass is nil"] = function()
@@ -119,13 +120,34 @@ describe ["class"] = function()
         end
 
         function Student.def:foo()
-          self:super("User.foo")
+          self:super(Student, "User.foo")
           self.var.student_foo = "Student.foo"
         end
 
         Student:foo()
         expect(Student.user_foo).to_equal("User.foo")
         expect(Student.student_foo).to_equal("Student.foo")
+      end
+
+      it ["super method in inheritance"] = function()
+        function User.def:foo()
+          self.var.user_foo = "User.foo"
+        end
+
+        function Student.def:foo()
+          self:super(Student)
+          self.var.student_foo = "Student.foo"
+        end
+
+        function Child.def:foo()
+          self:super(Child)
+          self.var.child_foo = "Child.foo"
+        end
+
+        Child:foo()
+        expect(Child.child_foo).to_equal("Child.foo")
+        expect(Child.student_foo).to_equal("Student.foo")
+        expect(Child.user_foo).to_equal("User.foo")
       end
     end
 
@@ -148,16 +170,38 @@ describe ["class"] = function()
         end
 
         function Student:foo()
-          self:super("User#foo")
+          self:super(Student, "User#foo")
           self.student_foo = "Student#foo"
         end
 
         student = Student:new()
         student:foo()
-
         expect(student.user_foo).to_equal("User#foo")
         expect(student.student_foo).to_equal("Student#foo")
       end
+
+      it ["super method in inheritance"] = function()
+        function User:foo()
+          self.user_foo = "User#foo"
+        end
+
+        function Student:foo()
+          self:super(Student)
+          self.student_foo = "Student#foo"
+        end
+
+        function Child:foo()
+          self:super(Child)
+          self.child_foo = "Child#foo"
+        end
+
+        child = Child:new()
+        child:foo()
+        expect(child.child_foo).to_equal("Child#foo")
+        expect(child.student_foo).to_equal("Student#foo")
+        expect(child.user_foo).to_equal("User#foo")
+      end
+
     end
 
     describe ["property"] = function()

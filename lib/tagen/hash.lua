@@ -1,10 +1,12 @@
 --- Hash class
 -- Note: for-statement:  for k,v in hash:pairs() do .. end
--- Dependencies: `tagen.class`, `tagen.enumerable`
+-- Dependencies: `tagen.core`, `tagen.class`, `tagen.enumerable`
 -- @module tagen.hash
 
+local tagen = require("tagen.core")
 local class = require("tagen.class")
 local Enumerable = require("tagen.enumerable")
+local pd = tagen.pd
 
 local Hash = class("Hash")
 

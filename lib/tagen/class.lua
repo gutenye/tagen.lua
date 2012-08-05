@@ -7,6 +7,7 @@
 
 local tagen = require "tagen.core"
 local tablex = require "tagen.tablex"
+local pd = tagen.pd
 local METAMETHODS = {"__add", "__call", "__concat", "__div", "__le", "__lt", "__mod", "__mul", "__pow", "__sub", "__tostring", "__unm" }
 
 local function _create_lookup_metamethod(klass, name)
@@ -23,50 +24,106 @@ local function _create_lookup_metamethod(klass, name)
   end
 end
 
+-- dymanic define method 'super', and call superclass's method.
+--
+-- @usage
+--
+--     User = class("User")
+--     Student = class("Student", User)
+--     Child = class("Child", Student)
+--
+--     define_super(Child, "__methods",  Child) -- define super method for class method
+--     define_super2(Child, "__instance_methods", Child) -- define super method for instance method
+--
+--     function User.def:foo()
+--     end
+--
+--     function Student.def:foo()
+--       self:super(Student)
+--       -- redefine Child.super      define_super(self, "__methods", User, "foo")
+--       -- call User.foo(self)
+--     end
+--
+--     function Child.def:foo()
+--       self:super(Child)
+--       -- redefine Child.super      define_super(self, "__methods", Student, "foo")
+--       -- call Student.foo(self)   
+--     end
+local function define_super(at, place, klass, name)
+  at[place]["super"] = function(self, curclass, ...)
+    local superclass = klass.superclass
+    local selfclass = self.class or self
+
+    -- first time to call super()
+    if selfclass == curclass then
+      name = debug.getinfo(2, "n").name
+      superclass = selfclass.superclass
+    end
+
+    meth = superclass[place][name]
+
+    if not meth then
+      error(("super: `%s' can't find class method `%s' in superclass `%s'.")
+        :format(selfclass.name, name, superclass.name), 2)
+    end
+
+    -- redefine Child.super
+    define_super(selfclass, place, superclass, name)
+
+    -- call superclass's foo method
+    meth(self, ...)
+  end
+end
+
 -- ¤class
 local function class(name, superclass)
   superclass = superclass or Object
-  local klass = {name = name, superclass = superclass} 
+  local klass = {name = name, superclass = superclass, __IS_CLASS=true} 
   klass.__class_variables = {}
+  klass.__instance_methods = {} -- also __instance_methods_mt
   klass.__methods = {}
   klass.__mixins = {} -- {<mixin>=true, ..}
-  klass.__instance_methods = { -- also __instance_methods_mt
-    __index = function(instance, key)
-      if key == "def" then  -- for define a object method
-        return instance.__object_methods
-      elseif key == "var" then
-        return instance.__instance_variables
-      else
-        -- property
-        local v = instance.class.__instance_methods["get_"..key]
-        if v then return v(instance) end
 
-        -- variable
-        v = rawget(instance.__instance_variables, key)
-        if v ~= nil then return v end
+  -- define some class/instance methods
 
-        -- object method
-        v = instance.__object_methods[key]
-        if v then return v end
+  define_super(klass, "__methods", klass)
+  define_super(klass, "__instance_methods", klass)
 
-        -- instance method
-        v = instance.class.__instance_methods[key]
-        if v then return v end
-
-        -- field
-        return rawget(instance, "_"..key)
-      end
-    end,
-
-    __newindex = function(instance, key, value)
+  klass.__instance_methods["__index"] = function(instance, key) 
+    if key == "def" then  -- for define a object method
+      return instance.__object_methods
+    elseif key == "var" then
+      return instance.__instance_variables
+    else
       -- property
-      local v = instance.class.__instance_methods["set_"..key]
-      if v then return v(instance, value) end
+      local v = instance.class.__instance_methods["get_"..key]
+      if v then return v(instance) end
 
       -- variable
-      return rawset(instance.__instance_variables, key, value)
+      v = rawget(instance.__instance_variables, key)
+      if v ~= nil then return v end
+
+      -- object method
+      v = instance.__object_methods[key]
+      if v then return v end
+
+      -- instance method
+      v = instance.class.__instance_methods[key]
+      if v then return v end
+
+      -- field
+      return rawget(instance, "_"..key)
     end
-  }
+  end
+
+  klass.__instance_methods["__newindex"] =  function(instance, key, value)
+    -- property
+    local v = instance.class.__instance_methods["set_"..key]
+    if v then return v(instance, value) end
+
+    -- variable
+    return rawset(instance.__instance_variables, key, value)
+  end
 
   for _,name in ipairs(METAMETHODS) do
     klass.__instance_methods[name] = _create_lookup_metamethod(klass, name)
@@ -108,11 +165,9 @@ local function class(name, superclass)
     end,
 
     -- User
-    --[[
     __tostring = function(t)
       return t.name
     end,
-    --]]
   }
 
   local __variables_mt = {
@@ -162,24 +217,15 @@ end
 
 function Object.def:allocate()
   local klass = self
-  local instance = {class=klass, __IS_OBJECT=true}
+  local instance = {class=klass, __IS_INSTANCE=true}
   instance.__instance_variables = {}
   instance.__object_methods = {}
 
   return setmetatable(instance, klass.__instance_methods)
 end
 
-function Object.def:super(...)
-  local name = debug.getinfo(2, "n").name
-  self.superclass.__methods[name](self, ...)
-end
 
 function Object:initialize() end
-
-function Object:super(...) 
-  local name = debug.getinfo(2, "n").name
-  self.class.superclass.__instance_methods[name](self, ...)
-end
 
 -- ¤Object
 

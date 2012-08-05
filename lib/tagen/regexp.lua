@@ -1,10 +1,12 @@
 --- Regexp class
 --
--- Dependencies: `tagen.class`
+-- Dependencies: `tagen.core`, `tagen.class`
 -- @module tagen.regexp
 
+local tagen = require("tagen.core")
 local class = require("tagen.class")
 local Regexp = class("Regexp")
+local pd = tagen.pd
 
 function Regexp.def:__call(source)
   return Regexp:new(source)

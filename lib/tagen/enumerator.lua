@@ -5,6 +5,7 @@
 
 local tagen = require("tagen.core")
 local class = require("tagen.class")
+local pd = tagen.pd
 
 -- to_enum(method="each")
 function Object:to_enum(method)

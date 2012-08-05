@@ -479,8 +479,16 @@ end
 raise = tagen.raise
 
 -- ¤Object
-function tagen.is_object(obj)
-  if type(obj) == "table" and obj.__IS_OBJECT then
+function tagen.is_class(klass)
+  if type(klass) == "table" and klass.__IS_CLASS then
+    return true
+  else
+    return false
+  end
+end
+
+function tagen.is_instance(obj)
+  if type(obj) == "table" and obj.__IS_INSTANCE then
     return true
   else
     return false
@@ -488,7 +496,7 @@ function tagen.is_object(obj)
 end
 
 function tagen.instance_of(obj, klass)
-  if tagen.is_object(obj) then
+  if tagen.is_instance(obj) then
     return obj.class == klass
 
   else
@@ -513,7 +521,7 @@ local function _kind_of(obj, klass)
 end
 
 function tagen.kind_of(obj, klass)
-  if tagen.is_object(obj) then
+  if tagen.is_instance(obj) then
     return _kind_of(obj, klass)
   else
     return false
@@ -523,7 +531,7 @@ end
 function tagen.to_s(obj)
   if obj == nil then
     return ""
-  elseif tagen.is_object(obj) and obj.to_s then
+  elseif tagen.is_instance(obj) and obj.to_s then
     return obj:to_s()
   else
     return tostring(obj)
@@ -533,7 +541,7 @@ end
 function tagen.inspect(obj)
   if type(obj) == "string" then
     return string.format("%q", obj)
-  elseif tagen.is_object(obj) and obj.inspect then
+  elseif tagen.is_instance(obj) and obj.inspect then
     return obj:inspect()
   else
     return tostring(obj)

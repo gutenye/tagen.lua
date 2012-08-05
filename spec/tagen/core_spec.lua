@@ -4,61 +4,31 @@ local User
 local user
 
 describe["tagen"] = function()
-  describe [".instance_of"] = function()
-    before = function()
+  describe [".is_class"] = function()
+    it ["return true if x is a tagen class, false otherwise"] = function()
       User = class("User")
-      user = User:new()
-    end
 
-    it ["return true when x is an instance of a class"] = function()
-      expect(tagen.instance_of(user, User)).to_be_true()
-    end
+      expect(tagen.is_class(User)).to_be_true()
 
-    it ["return false otherwise"] = function()
-      expect(tagen.instance_of({}, User)).to_be_false()
-      expect(tagen.instance_of(1, User)).to_be_false()
+      expect(tagen.is_class(User:new())).to_be_false()
+      expect(tagen.is_class({})).to_be_false()
+      expect(tagen.is_class("a")).to_be_false()
+      expect(tagen.is_class(1)).to_be_false()
+      expect(tagen.is_class(true)).to_be_false()
     end
   end
 
-  describe [".kind_of"] = function()
-    before = function()
+  describe [".is_instance"] = function()
+    it ["return true if x is an object from Object, false otherwise"] = function()
       User = class("User")
-      user = User:new()
-    end
 
-    it ["return true when x is kind of a class"] = function()
-      expect(tagen.kind_of(user, Object)).to_be_true()
-    end
+      expect(tagen.is_instance(User:new())).to_be_true()
 
-    it ["return false otherwise"] = function()
-      expect(tagen.kind_of({}, User)).to_be_false()
-      expect(tagen.kind_of(1, User)).to_be_false()
-    end
-  end
-
-  describe [".merge"] = function()
-    it ["works"] = function()
-      local a = {a=1, b=2}
-      local b = {a=7, c=3}
-
-      tagen.merge(a, b)
-
-      expect(a.a).to_equal(7)
-      expect(a.b).to_equal(2)
-      expect(a.c).to_equal(3)
-    end
-  end
-
-  describe [".is_object"] = function()
-    it ["return true if x is an object from Object"] = function()
-      User = class("User")
-      expect(tagen.is_object(User:new())).to_be_true()
-    end
-
-    it ["return false otherwise"] = function()
-      expect(tagen.is_object("a")).to_be_false()
-      expect(tagen.is_object(1)).to_be_false()
-      expect(tagen.is_object(true)).to_be_false()
+      expect(tagen.is_instance(User)).to_be_false()
+      expect(tagen.is_instance({})).to_be_false()
+      expect(tagen.is_instance("a")).to_be_false()
+      expect(tagen.is_instance(1)).to_be_false()
+      expect(tagen.is_instance(true)).to_be_false()
     end
   end
 
@@ -74,6 +44,8 @@ describe["tagen"] = function()
 
     it ["return false otherwise"] = function()
       expect(tagen.instance_of(user, Object)).to_be_false()
+      expect(tagen.instance_of({}, User)).to_be_false()
+      expect(tagen.instance_of(1, User)).to_be_false()
     end
   end
 
@@ -110,8 +82,24 @@ describe["tagen"] = function()
     it ["return false otherwise"] = function()
       expect(tagen.kind_of(student, Foo)).to_be_false()
       expect(tagen.kind_of(student, Fooable)).to_be_false()
+      expect(tagen.kind_of({}, User)).to_be_false()
+      expect(tagen.kind_of(1, User)).to_be_false()
     end
   end
+
+  describe [".merge"] = function()
+    it ["works"] = function()
+      local a = {a=1, b=2}
+      local b = {a=7, c=3}
+
+      tagen.merge(a, b)
+
+      expect(a.a).to_equal(7)
+      expect(a.b).to_equal(2)
+      expect(a.c).to_equal(3)
+    end
+  end
+
 
   describe [".to_s"] = function()
     it ["return empty string when nil"] = function()
