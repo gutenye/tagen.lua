@@ -1,4 +1,8 @@
+--- Regexp class
+--
 -- Dependencies: `tagen.class`
+-- @module tagen.regexp
+
 local class = require("tagen.class")
 local Regexp = class("Regexp")
 

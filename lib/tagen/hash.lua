@@ -1,5 +1,7 @@
+--- Hash class
 -- Note: for-statement:  for k,v in hash:pairs() do .. end
 -- Dependencies: `tagen.class`, `tagen.enumerable`
+-- @module tagen.hash
 
 local class = require("tagen.class")
 local Enumerable = require("tagen.enumerable")
@@ -162,7 +164,11 @@ end
 function Hash:merge1(other, func)
   func = func or function(k,v1,v2) return v2 end 
 
-  for k, v in other:pairs() do
+  if tagen.instance_of(other, Hash) then
+    other = other.__instance_variables
+  end
+
+  for k, v in pairs(other) do
     if self:has_key(k) then
       self:set(k, func(k,self[k],v))
     else

@@ -1,14 +1,14 @@
---- Ruby-style Array class.
+--- Array class.
 --
--- See the Guide for further @{02-arrays.md.Python_style_Arrays|discussion}
+-- **Note**: 1. use `Array#length()` instead of `#ary`
+-- 2. use `Array#insert`, `Array#delete_at` instead of `table.insert`, `table.remove`
 --
--- Note: 
---  1. use ary#length() instead of #ary
---  2. use ary#insert, #delete_at instead of table.insert, remove
+-- Array include Enumerable.
+--
+-- Array#[index] support -1.
 --
 -- Dependencies: `tagen.core`, `tagen.class`, `tagen.mixin`, `tagen.enumerable`
--- @module tagen.list
--- @pragma nostrip
+-- @module tagen.array
 
 local tagen = require "tagen.core"
 local class = require "tagen.class"
@@ -21,7 +21,8 @@ local Array = class("Array")
 original__index = Array.__instance_methods["__index"]
 original__newindex = Array.__instance_methods["__newindex"]
 
--- index support -1
+--- metamethod __index
+-- support -1 index
 Array.__instance_methods["__index"] = function(self, key)
   if type(key) == "number" and key < 0 then
     key = self:length() + key + 1 
@@ -30,6 +31,8 @@ Array.__instance_methods["__index"] = function(self, key)
   return original__index(self, key)
 end
 
+--- metamethod __newindex
+-- support -1 index
 Array.__instance_methods["__newindex"] = function(self, key, value)
   if type(key) == "number" and key < 0 then
     key = self:length() + key + 1 
@@ -40,14 +43,31 @@ end
 
 Array.include(Enumerable)
 
--- Array(table)
--- Array(array)
+--- Return a new array.
+-- 
+-- <h3>call-seq:</h3>
+--     Array(table)    
+--     Array(array)   
+--
+-- @param  obj table or array
+--
+-- @return a new array.
 function Array.def:__call(obj)
   return Array:new(obj)
 end
 
--- initialize()
--- initialize(table/array)
+--- Returns a new array.
+--
+-- <h3>call-seq:</h3>
+--     initialize()
+--     initialize(table/array)
+--
+-- @usage
+--  
+--  Array:new{}
+--  Array:new{"a", "b"}
+--
+-- @return a new array.
 function Array:initialize(obj)
   obj = obj or {}
   local len
@@ -63,15 +83,30 @@ function Array:initialize(obj)
   end
 end
 
+--- Duplicate self.
+--
+-- @return a new array.
 function Array:dup()
   return Array:new(self)
 end
 
+--- Replace self.
+--
+-- @return self
 function Array:replace(ary)
   self.__instance_variables = ary.__instance_variables
 end
 
--- to nil
+-- Returns the number of elements in self.
+--
+-- alias: size
+--
+-- @usage
+--
+--   [ 1, 2, 3, 4, 5 ].length   #=> 5
+--   [].length                  #=> 0
+--
+-- @return number
 function Array:length()
   return #self.__instance_variables
 end
@@ -85,6 +120,10 @@ end
 Array:ialias("to_s", "__tostring")
 Array:ialias("inspect", "__tostring")
 
+--- Compare two arrays.
+--
+-- @param other array
+-- @return boolean
 function Array:__eq(other)
   if not tagen.kind_of(other, Array) then return false end
 
@@ -97,6 +136,12 @@ function Array:__eq(other)
   return true
 end
 
+--- Concat two arrays.
+--
+-- alias: __add, concat
+--
+-- @param other array
+-- @return a new array.
 function Array:__concat(other)
   local ary = Array:new(self)
 
@@ -110,6 +155,13 @@ end
 Array:ialias("__add", "__concat")
 Array:ialias("concat", "__concat")
 
+
+--- Returns true if self contains no elements.
+-- @usage
+--
+--   A{}.is_empty()   #=> true
+--
+-- @return boolean
 function Array:is_empty()
   if self:length() == 0 then
     return true
@@ -118,6 +170,19 @@ function Array:is_empty()
   end
 end
 
+--- Returns true if the given obj is present in self (that is, if any
+-- object `==` object+, otherwise returns false.
+--
+-- alias: `contains`
+-- @param obj object
+--
+-- @usage
+--
+--   a = Array{ "a", "b", "c" }
+--   a.include("b")   #=> true
+--   a.include("z")   #=> false
+--
+-- @return boolean
 function Array:include(obj)
   for i=1,self:length() do
     if self[i] == obj then
@@ -130,7 +195,27 @@ end
 
 Array:ialias("contains", "include")
 
--- (obj), (func)
+--- Returns the number of elements.
+--
+-- <h3>call-seq:</h3>
+--     ary.count(obj)            -> int
+--     ary.count(func{|item|})   -> int
+--
+-- If a object is given, counts the number of elements which equal obj using ==
+--
+-- If a function is given, counts the number of elements for which the function
+--  returns a true value.
+--
+-- @param obj obj or func
+--
+-- @usage
+--
+--   ary = [1, 2, 4, 2]
+--   ary.count                  #=> 4
+--   ary.count(2)               #=> 2
+--   ary.count { |x| x%2 == 0 } #=> 3
+--
+-- @return number
 function Array:count(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
@@ -145,38 +230,100 @@ function Array:count(obj)
   return count
 end
 
--- (index, count=1)
--- support -1
-function Array:slice(index, count)
-  count = count or 1
-  assert_arg(1, index, "number")
-  assert_arg(2, count, "number")
-  local ary = Array:new()
-
-  if index < 0 then
-    index = self:length() + index + 1
+local function _slice(self, start, length, is_delete)
+  if start < 0 then
+    start = self:length() + start + 1
   end
 
-  local j = count + index
+  if length == nil then
+    local ret = self[start]
+    if is_delete then
+      table.remove(self.__instance_variables, start)
+    end
 
-  for i=1,self:length() do
-    if i >= index then 
-      if i < j then
-        ary:append(self[i])
-      else
-        break
+    return ret
+  else
+    local ary = Array:new()
+    local j = length + start
+
+    local i = 1
+    while i <= self:length() do
+      if i >= start then 
+        if i < j then
+          local v = self[i]
+          if is_delete then
+            table.remove(self.__instance_variables, i)
+            j = j - 1
+          else
+            i = i + 1
+          end
+
+          ary:append(v)
+        else
+          break
+        end
       end
     end
-  end
 
-  return ary
+    if ary:is_empty() then
+      return nil
+    else
+      return ary
+    end
+  end
 end
 
-function Array:slice1(index, count)
-  count = count or 1
-  assert_arg(1, index, "number")
-  assert_arg(2, count, "number")
-  return self:replace(self:slice(index, count))
+--- Element reference.
+--
+-- <h3>call-seq:</h3>
+--     slice(index)            -> obj or nil
+--     slice(start, length)    -> new_ary or nil
+--
+-- Returns the element at index, or returns a
+-- subarray starting at the start index and continuing for lengthelements.
+--
+-- Negative indices count backward from the end of the array (-1 is the last
+-- element).
+--
+-- Returns nil if the index are out of range.
+--
+-- @param start number
+-- @param length number
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c", "d", "e" }
+--    a:slice(1)            #=> "a"
+--    a:slice(1, 1)         #=> ["a"]
+--    a:slice(-2, 2)        #=> ["d", "e"]
+--    a:slice(100)          #=> nil
+function Array:slice(start, length)
+  assert_arg(1, start, "number")
+  return _slice(self, start, length, false)
+end
+
+-- Element slice in place.
+-- Deletes the element(s) given by an +index+ (optionally up to +length+
+-- elements) or by a +range+.
+--
+-- Returns the deleted object (or objects), or +nil+ if the +index+ is out of
+-- range.
+--
+-- <h3>call-seq:</h3>
+--    slice1(index)         -> obj or nil
+--    slice1(start, length) -> new_ary or nil
+--
+--    a = Array{ "a", "b", "c" }
+--    a.slice1(1)     #=> "b"
+--    a               #=> ["a", "c"]
+--    a.slice1(-1)    #=> "c"
+--    a               #=> ["a"]
+--    a.slice1(100)   #=> nil
+--    a               #=> ["a"]
+function Array:slice1(start, length)
+  assert_arg(1, start, "number")
+
+  return _slice(self, start, length, true)
 end
 
 function Array:at(index)
@@ -345,14 +492,20 @@ end
 -- delete(obj, func)
 function Array:delete(obj, func)
   if type(func) ~= "function" then func = function() return nil end end
+  local is_found = false
 
   for i=1,self:length() do
     if self[i] == obj then
-      return self:delete_at(i)
+      is_found = true
+      self:delete_at(i)
     end
   end
 
-  return func()
+  if is_found then
+    return obj
+  else
+    return func()
+  end
 end
 
 function Array:delete_if(func)

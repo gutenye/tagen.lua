@@ -438,23 +438,18 @@ end
 -- @param msg an optional custom message
 -- @param lev optional stack position for trace, default 2
 -- @raise if the argument n is not the correct type
--- @usage assert_arg(1,t,'table')
--- @usage assert_arg(n,val,'string',path.isdir,'not a directory')
+--
+-- @usage 
+--   assert_arg(1,t,'table')
+--   assert_arg(n,val,'string',path.isdir,'not a directory')
 function tagen.assert_arg (n,val,tp,verify,msg,lev)
   if type(val) ~= tp then
-    error(("argument %d expected a '%s', got a '%s'"):format(n,tp,type(val)),lev or 2)
+    local func_name = debug.getinfo(2).name
+    error(("%s: wrong argument type %s #%d (expected %s)"):format(func_name, type(val), n, tp), lev or 2)
   end
   if verify and not verify(val) then
     error(("argument %d: '%s' %s"):format(n,val,msg),lev or 2)
   end
-end
-
---- assert the common case that the argument is a string.
--- @param n argument index
--- @param val a value that must be a string
--- @raise val must be a string
-function tagen.assert_string (n,val)
-  tagen.assert_arg(n,val,'string',nil,nil,3)
 end
 
 local err_mode = 'default'

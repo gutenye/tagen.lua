@@ -212,21 +212,27 @@ describe ["Array"] = function()
     end
   end
 
+  --[[
   describe ["#slice"] = function()
-    it ["slice an array"] = function()
-      a = Array:new{1, 2, 3}
-      b = Array:new{2, 3}
+    it ["return a object when length is not given"] = function()
+      a = Array:new{11, 12, 13}
+      expect(a:slice(2)).to_equal(12)
+    end
 
-      ret = a:slice(2, 2)
+    it ["return a new array when length is given"] = function()
+      a = Array:new{1, 2, 3}
+      b = Array:new{2}
+
+      ret = a:slice(2, 1)
       expect(a).to_equal(a)
       expect(ret).to_equal(b)
     end
 
-    it ["default count is 1"] = function()
-      a = Array:new{1, 2, 3}
-      b = Array:new{2}
+    it ["return nil when index out of range"] = function()
+      a = Array:new{11, 12}
 
-      expect(a:slice(2)).to_equal(b)
+      expect(a:slice(9)).to_be_nil()
+      expect(a:slice(9,2)).to_be_nil()
     end
 
     it ["support -1 index"] = function()
@@ -246,6 +252,7 @@ describe ["Array"] = function()
       expect(a).to_equal(b)
     end
   end
+  --]]
 
   describe ["at"] = function() 
     it ["return value at index"] = function()
@@ -431,9 +438,9 @@ describe ["Array"] = function()
   end
 
   describe ["#delete"] = function()
-    it ["return deleted obj and take IN PLACE"] = function()
+    it ["delete all matchs and return deleted obj and take IN PLACE"] = function()
       a = Array:new{11, 12, 13, 12}
-      b = Array:new{11, 13, 12}
+      b = Array:new{11, 13}
 
       expect(a:delete(12)).to_equal(12)
       expect(a).to_equal(b)

@@ -1,4 +1,7 @@
+--- Mixin class
+--
 -- Dependencies: `tagen.class`
+-- @module tagen.mixin
 
 class = require("tagen.class")
 

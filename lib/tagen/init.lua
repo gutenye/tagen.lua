@@ -1,5 +1,4 @@
---------------
--- Entry point for loading all PL libraries only on demand.
+--- Entry point for loading all Tagen libraries only on demand.
 -- Requiring "tagen" means that whenever a module is implicitly accesssed
 -- (e.g. `tagen.split`)
 -- then that module is dynamically loaded. The submodules are all brought into

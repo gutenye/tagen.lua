@@ -1,6 +1,7 @@
+--- Enumerable mixin
 -- Note: implement each() need BREAK.
 -- Dependenies: `tagen.mixin` `tagen.enumerator`
-
+-- @module tagen.enumerable
 
 local mixin = require("tagen.mixin")
 local Enumerator = require("tagen.enumerator")

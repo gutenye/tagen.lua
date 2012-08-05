@@ -1,4 +1,7 @@
+--- Enumerator class
+--
 -- Dependencies: `tagen.core` `tagen.class`
+-- @module tagen.enumerator
 
 local tagen = require("tagen.core")
 local class = require("tagen.class")

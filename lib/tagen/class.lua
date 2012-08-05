@@ -1,7 +1,9 @@
--- class, mixin = require("tagen.class")
+--- class, mixin = require("tagen.class")
+--
+-- global: Object
 --
 -- Dependencies: `tagen.core` `tagen.tablex`
--- global: Object
+-- @module tagen.class
 
 local tagen = require "tagen.core"
 local tablex = require "tagen.tablex"

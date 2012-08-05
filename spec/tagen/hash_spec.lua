@@ -206,6 +206,15 @@ describe ["Hash"] = function()
       expect(a).to_equal(rst)
     end
 
+    it ["merge another table into self"] = function()
+      a = Hash{a=1, b=2}
+      b = {a=2, c=3}
+      rst = Hash{a=2, b=2, c=3}
+
+      expect(a:merge1(b)).to_equal(rst)
+      expect(a).to_equal(rst)
+    end
+
     it ["can call a func"] = function()
       a = Hash{a=1, b=2}
       b = Hash{a=2, c=3}
