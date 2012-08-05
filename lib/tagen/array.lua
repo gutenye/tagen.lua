@@ -19,8 +19,8 @@ local assert_arg = tagen.assert_arg
 
 local Array = class("Array")
 
-original__index = Array.__instance_methods["__index"]
-original__newindex = Array.__instance_methods["__newindex"]
+local original__index = Array.__instance_methods["__index"]
+local original__newindex = Array.__instance_methods["__newindex"]
 
 --- metamethod __index
 -- support -1 index
@@ -42,7 +42,7 @@ Array.__instance_methods["__newindex"] = function(self, key, value)
   return original__newindex(self, key, value)
 end
 
-Array.include(Enumerable)
+Array:include(Enumerable)
 
 --- Return a new array.
 -- 
@@ -55,6 +55,23 @@ Array.include(Enumerable)
 -- @return a new array.
 function Array.def:__call(obj)
   return Array:new(obj)
+end
+
+--- wrap an object to Array
+--
+-- @usage
+--
+--  Array.wrap(1)          => [1]
+--  Array.wrap({1,2})      => [1,2]
+--  Array.wrap(Array{1,2}) => [1,2]
+--
+-- @return a new array.
+function Array.def:wrap(obj)
+  if tagen.kind_of(obj, Array) or tagen.kind_of(obj, "table") then
+    return Array(obj)
+  else
+    return Array{obj}
+  end
 end
 
 --- Returns a new array.
@@ -232,6 +249,7 @@ function Array:count(obj)
 end
 
 local function _slice(self, start, length, is_delete)
+
   if start < 0 then
     start = self:length() + start + 1
   end

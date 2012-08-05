@@ -10,7 +10,7 @@ local pd = tagen.pd
 
 local Hash = class("Hash")
 
-Hash.include(Enumerable)
+Hash:include(Enumerable)
 
 -- Hash(table)
 -- Hash(hash)

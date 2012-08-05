@@ -69,7 +69,7 @@ end
 -- count(pattern)
 function stringx.count(self, str)
   assert_arg(1, self, "string")
-  assert_arg(2, str, "string")
+  assert_arg(2, str, {"string", Regexp})
 
   local i, k = _find_all(self, str, 1)
   return k
@@ -80,6 +80,7 @@ end
 function stringx.index(self, str, offset)
   offset = offset or 1
   assert_arg(1, self, "string")
+  assert_arg(2, str, {"string", Regexp})
   assert_arg(3, offset, "number")
 
   if tagen.kind_of(str, Regexp) then
@@ -94,6 +95,7 @@ end
 function stringx.rindex(self, str, offset)
   offset = offset or 1
   assert_arg(1, self, "string")
+  assert_arg(2, str, {"string", Regexp})
   assert_arg(3, offset, "number")
 
   self = string.sub(self, 1, -offset)
@@ -109,6 +111,7 @@ end
 -- include(pat)
 function stringx.include(self, str)
   assert_arg(1, self, "string")
+  assert_arg(2, str, {"string", Regexp})
   local ret
 
   if tagen.kind_of(str, Regexp) then
@@ -181,6 +184,7 @@ stringx.each_line = stringx.lines
 -- NOT IN PLACE
 function stringx.delete(self, str)
   assert_arg(1, self, "string")
+  assert_arg(2, str, {"string", Regexp})
   local plain, i, j
   if tagen.kind_of(str, Regexp) then str = str.source; plain = false else plain = true end
 
@@ -237,10 +241,11 @@ function stringx.capitalize(self)
   end)
 end
 
--- (str, [limit])
--- (pat, [limit])
+-- (string, [limit])
+-- (pattern, [limit])
 function stringx.split(self, pat, limit)
   assert_arg(1, self, "string")
+  assert_arg(2, pat, {"string", Regexp})
   local plain
   local idx, ary = 1, Array:new()
   if tagen.instance_of(pat, Regexp) then pat = pat.source; plain = false else plain = true end
@@ -298,6 +303,7 @@ end
 function stringx.insert(self, index, str)
   assert_arg(1, self, "string")
   assert_arg(2, index, "number")
+  assert_arg(3, str, {"string", "number"})
   return string.sub(self, 1, index-1)..str..string.sub(self, index, -1)
 end
 
@@ -328,30 +334,33 @@ end
 -- @param self the string
 -- @param w width of justification
 -- @param ch padding character, default ' '
-function stringx.ljust(self,w,ch)
+function stringx.ljust(self, w, ch)
   assert_arg(1, self, "string")
   assert_arg(2, w, "number")
-  return _just(self,w,ch,true,false)
+  assert_arg(3, ch, "string")
+  return _just(self, w, ch, true, false)
 end
 
 --- right-justify s with width w.
 -- @param s the string
 -- @param w width of justification
 -- @param ch padding character, default ' '
-function stringx.rjust(s,w,ch)
-  assert_arg(1,s, "string")
-  assert_arg(2,w,'number')
-  return _just(s,w,ch,false,true)
+function stringx.rjust(self, w, ch)
+  assert_arg(1, self, "string")
+  assert_arg(2, w,'number')
+  return _just(self, w, ch, false, true)
 end
 
 --- center-justify s with width w.
 -- @param s the string
 -- @param w width of justification
 -- @param ch padding character, default ' '
-function stringx.center(s,w,ch)
-  assert_arg(1,s, "string")
-  assert_arg(2,w,'number')
-  return _just(s,w,ch,true,true)
+function stringx.center(self, w, ch)
+  assert_arg(1, self, "string")
+  assert_arg(2, w, "number")
+  assert_arg(3, ch, "string")
+
+  return _just(self, w, ch,true,true)
 end
 
 return stringx

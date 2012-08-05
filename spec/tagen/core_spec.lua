@@ -1,34 +1,75 @@
 require "spec_helper" 
 
-local User
-local user
+local User, Userable, Student, Studentable, Foo, Fooable
+local user, student, foo, callable
 
 describe["tagen"] = function()
-  describe [".is_class"] = function()
-    it ["return true if x is a tagen class, false otherwise"] = function()
+  describe [".type"] = function()
+    before = function()
       User = class("User")
-
-      expect(tagen.is_class(User)).to_be_true()
-
-      expect(tagen.is_class(User:new())).to_be_false()
-      expect(tagen.is_class({})).to_be_false()
-      expect(tagen.is_class("a")).to_be_false()
-      expect(tagen.is_class(1)).to_be_false()
-      expect(tagen.is_class(true)).to_be_false()
+      Userable = mixin("Userable")
+    end
+    
+    it ["return the type"] = function()
+      expect(tagen.type(User)).to_equal("class")
+      expect(tagen.type(User:new())).to_equal("User")
+      expect(tagen.type(Userable)).to_equal("mixin")
+      expect(tagen.type("a")).to_equal("string")
+      expect(tagen.type(1)).to_equal("number")
     end
   end
 
-  describe [".is_instance"] = function()
-    it ["return true if x is an object from Object, false otherwise"] = function()
+  describe [".kind_of"] = function()
+    before = function()
       User = class("User")
+      Userable = mixin("Userable")
+      Student = class("Student", User)
+      Studentable = mixin("Studentable")
+      Foo = class("Foo")
+      Fooable = class("Fooable")
 
-      expect(tagen.is_instance(User:new())).to_be_true()
+      User:include(Userable)
+      Student:include(Studentable)
+      student = Student:new()
 
-      expect(tagen.is_instance(User)).to_be_false()
-      expect(tagen.is_instance({})).to_be_false()
-      expect(tagen.is_instance("a")).to_be_false()
-      expect(tagen.is_instance(1)).to_be_false()
-      expect(tagen.is_instance(true)).to_be_false()
+      callable = setmetatable({}, {__call = function() end})
+    end
+
+    it ["return true if x was create from it's class"] = function()
+      expect(tagen.kind_of(student, Student)).to_be_true()
+    end
+
+    it ["return true if x is in it's inheritance"] = function()
+      expect(tagen.kind_of(student, User)).to_be_true()
+    end
+
+    it ["return true if x is a module included by it's class"] = function()
+      expect(tagen.kind_of(student, Studentable)).to_be_true()
+    end
+
+    it ["return true if x is a module included by it's acenstores"] = function()
+      expect(tagen.kind_of(student, Userable)).to_be_true()
+    end
+
+    it ["support string, ..."]  = function()
+      expect(tagen.kind_of("a", "string")).to_be_true()
+      expect(tagen.kind_of(1, "number")).to_be_true()
+    end
+
+    it ["extra support class, ..."] = function()
+      expect(tagen.kind_of(1, "object")).to_be_true()
+      expect(tagen.kind_of(nil, "object")).to_be_false()
+
+      expect(tagen.kind_of(User, "class")).to_be_true()
+      expect(tagen.kind_of(User:new(), "instance")).to_be_true()
+
+      expect(tagen.kind_of(Userable, "mixin")).to_be_true()
+
+      expect(tagen.kind_of(callable, "callable")).to_be_true()
+      expect(tagen.kind_of(function() end, "callable")).to_be_true()
+
+      expect(tagen.kind_of(1, "integer")).to_be_true()
+      expect(tagen.kind_of(1.1, "interger")).to_be_false()
     end
   end
 
@@ -49,44 +90,6 @@ describe["tagen"] = function()
     end
   end
 
-  describe [".kind_of"] = function()
-    before = function()
-      User = class("User")
-      Userable = mixin("Userable")
-      Student = class("Student", User)
-      Studentable = mixin("Studentable")
-      Foo = class("Foo")
-      Fooable = class("Fooable")
-
-      User:include(Userable)
-      Student:include(Studentable)
-      student = Student:new()
-    end
-
-    it ["return true if x was create from it's class"] = function()
-      expect(tagen.kind_of(student, Student)).to_be_true()
-    end
-
-    it ["return true if x is in it's inheritance"] = function()
-      expect(tagen.kind_of(student, User)).to_be_true()
-    end
-
-    it ["return true if x is a module included by it's class"] = function()
-      expect(tagen.kind_of(student, Studentable)).to_be_true()
-    end
-
-    it ["return true if x is a module included by it's acenstores"] = function()
-      expect(tagen.kind_of(student, Userable)).to_be_true()
-    end
-
-    it ["return false otherwise"] = function()
-      expect(tagen.kind_of(student, Foo)).to_be_false()
-      expect(tagen.kind_of(student, Fooable)).to_be_false()
-      expect(tagen.kind_of({}, User)).to_be_false()
-      expect(tagen.kind_of(1, User)).to_be_false()
-    end
-  end
-
   describe [".merge"] = function()
     it ["works"] = function()
       local a = {a=1, b=2}
@@ -99,7 +102,6 @@ describe["tagen"] = function()
       expect(a.c).to_equal(3)
     end
   end
-
 
   describe [".to_s"] = function()
     it ["return empty string when nil"] = function()

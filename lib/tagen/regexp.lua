@@ -5,14 +5,21 @@
 
 local tagen = require("tagen.core")
 local class = require("tagen.class")
-local Regexp = class("Regexp")
 local pd = tagen.pd
+local assert_arg = tagen.assert_arg
+
+local Regexp = class("Regexp")
+
 
 function Regexp.def:__call(source)
+  assert_arg(2, source, "string")
+
   return Regexp:new(source)
 end
 
 function Regexp:initialize(source)
+  assert_arg(2, source, "string")
+
   self.source = source
 end
 

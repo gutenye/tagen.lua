@@ -8,6 +8,8 @@
 local tagen = require "tagen.core"
 local tablex = require "tagen.tablex"
 local pd = tagen.pd
+local assert_arg = tagen.assert_arg
+
 local METAMETHODS = {"__add", "__call", "__concat", "__div", "__le", "__lt", "__mod", "__mul", "__pow", "__sub", "__tostring", "__unm" }
 
 local function _create_lookup_metamethod(klass, name)
@@ -53,6 +55,8 @@ local function define_super(at, place, klass, name)
   at[place]["super"] = function(self, curclass, ...)
     local superclass = klass.superclass
     local selfclass = self.class or self
+    assert_arg(1, self, {"class", "instance"})
+    assert_arg(2, curclass, "class")
 
     -- first time to call super()
     if selfclass == curclass then
@@ -76,9 +80,24 @@ local function define_super(at, place, klass, name)
 end
 
 -- ¤class
-local function class(name, superclass)
+
+-- define a class
+--
+-- @usage
+--
+--  User = class("User")
+--  Student = class("Student", User)
+--
+local function class(name, superclass, is_mixin)
+  assert_arg(1, name, "string")
+
   superclass = superclass or Object
-  local klass = {name = name, superclass = superclass, __IS_CLASS=true} 
+  local klass = {name = name, superclass = superclass}
+  if is_mixin then
+    klass["__IS_MIXIN"] = true
+  else
+    klass["__IS_CLASS"] = true
+  end
   klass.__class_variables = {}
   klass.__instance_methods = {} -- also __instance_methods_mt
   klass.__methods = {}
@@ -210,6 +229,8 @@ Object = class("Object", nil)
 
 -- self is User, not User.def. because User:new() -> User.def:new()
 function Object.def:new(...)
+  assert_arg(1, self, "class")
+
   local instance = self:allocate()
   instance:initialize(...)
   return instance
@@ -230,6 +251,10 @@ function Object:initialize() end
 -- ¤Object
 
 function Object.def:alias(new, old)
+  assert_arg(1, self, {"class", "mixin"})
+  assert_arg(2, new, "string")
+  assert_arg(3, old, "string")
+
   local meth = self.__methods[old]
 
   if meth == nil then
@@ -241,6 +266,10 @@ end
 
 -- instance alias
 function Object.def:ialias(new, old)
+  assert_arg(1, self, {"class", "mixin"})
+  assert_arg(2, new, "string")
+  assert_arg(3, old, "string")
+
   local meth = self.__instance_methods[old]
 
   if meth == nil then
@@ -251,14 +280,23 @@ function Object.def:ialias(new, old)
 end
 
 function Object.def:method(name)
+  assert_arg(1, self, {"class", "mixin"})
+  assert_arg(2, name, "string")
+
   return self.__methods[name]
 end
 
 function Object.def:instance_method(name)
+  assert_arg(1, self, {"class", "mixin"})
+  assert_arg(2, name, "string")
+
   return self.__instance_methods[name]
 end
 
 function Object:method(name)
+  assert_arg(1, self, "instance")
+  assert_arg(2, name, "string")
+
   local meth = self.__object_methods[name]
   if meth ~= nil then
     return meth
@@ -268,39 +306,33 @@ function Object:method(name)
 end
 
 function Object.def:class_variables()
+  assert_arg(1, self, {"class", "mixin"})
+
   return self.__class_variables
 end
 
 function Object.def:methods()
+  assert_arg(1, self, {"class", "mixin"})
+
   return self.__methods
 end
 
 function Object.def:instance_methods()
+  assert_arg(1, self, {"class", "mixin"})
+
   return self.__instance_methods
 end
 
 function Object:instance_variables()
+  assert_arg(1, self, "instance")
+
   return self.__instance_variables
 end
 
 function Object:object_methods()
+  assert_arg(1, self, "instance")
+
   return self.__object_methods
-end
-
-function Object:kind_of(klass)
-  local c = self.class
-
-  while c do
-    if c == klass then 
-      return true 
-    elseif c.__mixins[klass] then
-      return true
-    end
-
-    c = c.superclass
-  end
-
-  return false
 end
 
 -- #<User: a=1, _b=2>

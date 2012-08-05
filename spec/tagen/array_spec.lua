@@ -23,6 +23,7 @@ describe ["Array"] = function()
     end
   end
 
+
   --
   -- core methods
   --
@@ -120,7 +121,7 @@ describe ["Array"] = function()
   end
 
   --
-  -- begin
+  -- ¤begin
   --
 
   describe ["Array()"] = function()
@@ -128,6 +129,29 @@ describe ["Array"] = function()
       a = Array()
 
       expect(tagen.instance_of(a, Array)).to_be_true()
+    end
+  end
+
+  describe [".wrap"] = function()
+    it ["wrap a single object"] = function()
+      a = 1
+      b = Array{1}
+
+      expect(Array:wrap(a)).to_equal(b)
+    end
+
+    it ["wrap a table"] = function()
+      a = {1, 2}
+      b = Array{1, 2}
+
+      expect(Array:wrap(a)).to_equal(b)
+    end
+
+    it ["wrap an array"] = function()
+      a = Array{1, 2}
+      b = Array{1, 2}
+
+      expect(Array:wrap(a)).to_equal(b)
     end
   end
 

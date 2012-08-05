@@ -23,6 +23,141 @@ end
 
 tagen.dir_separator = _G.package.config:sub(1,1)
 
+-- ¤type --{{{1
+--- a string representation of a type.
+--
+-- @usage
+--
+--   tagen.type(Array:new())   -> "Array"
+--   tagen.type(Array)         -> "class"
+--   tagen.type("x")           -> "string"
+--
+-- instance, class, mixin, file
+function tagen.type(obj)
+  local t = type(obj)
+
+  if t == "table" or t == "userdata" then
+    if obj.__IS_INSTANCE then
+      return obj.class.name
+    elseif obj.__IS_CLASS then
+      return "class"
+    elseif obj.__IS_MIXIN then 
+      return "mixin"
+    elseif getmetatable(obj) == getmetatable(io.stdout) then
+      return "file"
+    end
+  end
+
+  return t
+end
+
+local function _kind_of(obj, klass)
+  local c = obj.class
+
+  while c do
+    if c == klass then 
+      return true 
+    elseif c.__mixins[klass] then
+      return true
+    end
+
+    c = c.superclass
+  end
+
+  return false
+end
+
+-- @usage
+--
+--  tagen.kind_of(obj, Array)
+--  tagen.kind_of(obj, "string")
+--
+-- "object", class, mixin, instance, file, callable, integer
+function tagen.kind_of(obj, klass)
+  if klass == "object" then
+    return obj ~= nil
+
+  elseif klass == "class" then
+    return type(obj) == "table" and obj.__IS_CLASS
+
+  elseif klass == "mixin" then
+    return type(obj) == "table" and obj.__IS_MIXIN
+
+  elseif klass == "file" then
+    return getmetatable(obj) == getmetatable(io.stdout)
+
+  elseif klass == "callable" then
+    return (type(obj) == "function") or 
+      (getmetatable(obj) and getmetatable(obj).__call and true)
+
+  elseif klass == "integer" then
+    return type(obj) == "number" and  math.ceil(obj) == obj
+
+  elseif type(obj) == "table" and obj.__IS_INSTANCE then
+    if klass == "instance" then
+      return true
+    else
+      return _kind_of(obj, klass)
+    end
+
+  else
+    return type(obj) == klass
+  end
+end
+
+function tagen.instance_of(obj, klass)
+  if tagen.kind_of(obj, "instance") then
+    return obj.class == klass
+
+  else
+    return false
+  end
+end
+--}}}1
+
+--- assert that the given argument is in fact of the correct type.
+--
+-- @param n argument index
+-- @param val the value
+-- @param type_s the types
+-- @param lev optional stack position for trace, (default 2)
+-- @param verify an optional verfication function
+-- @param msg an optional custom message
+--
+-- @usage 
+--
+--   assert_arg(1, str, "string")
+--   assert_arg(1, ary, Array)
+--   assert_arg(1, str, {"string", Regexp})
+--   assert_arg(n,val,'string',path.isdir,'not a directory')
+--
+function tagen.assert_arg(n, val, type_s, lev, verify, msg)
+  if type(type_s) ~= "table" then
+    types = {type_s}
+  else
+    types = type_s
+  end
+
+  local is_type = false
+
+  for _, tp in ipairs(types) do
+    if tagen.kind_of(val, tp) then
+      is_type = true
+      break
+    end
+  end
+
+  if not is_type then
+    local func_name = debug.getinfo(2).name
+    error(("%s: wrong argument type `%s' #%d (expected `%s')")
+      :format(func_name, tagen.type(val), n, table.concat(types, ","), lev or 2))
+  end
+
+  if verify and not verify(val) then
+    error(("argument %d: '%s' %s"):format(n,val,msg),lev or 2)
+  end
+end
+
 --- end this program gracefully.
 -- @param code The exit code or a message to be printed
 -- @param ... extra arguments for message's format'
@@ -274,50 +409,6 @@ function tagen.memoize(func)
 end
 --]]
 
---- is the object either a function or a callable object?.
--- @param obj Object to check.
-function tagen.is_callable (obj)
-  return type(obj) == 'function' or getmetatable(obj) and getmetatable(obj).__call
-end
-
---- is the object of the specified type?.
--- If the type is a string, then use type, otherwise compare with metatable
--- @param obj An object to check
--- @param tp String of what type it should be
-function tagen.is_type (obj,tp)
-  if type(tp) == 'string' then return type(obj) == tp end
-  local mt = getmetatable(obj)
-  return tp == mt
-end
-
-
-local fileMT = getmetatable(io.stdout)
-
---- a string representation of a type.
--- For tables with metatables, we assume that the metatable has a `_name`
--- field. Knows about Lua file objects.
--- @param obj an object
--- @return a string like 'number', 'table' or 'List'
-function tagen.type (obj)
-  local t = type(obj)
-  if t == 'table' or t == 'userdata' then
-    local mt = getmetatable(obj)
-    if mt == fileMT then
-      return 'file'
-    else
-      return mt._name or "unknown "..t
-    end
-  else
-    return t
-  end
-end
-
---- is this number an integer?
--- @param x a number
--- @raise error if x is not a number
-function tagen.is_integer (x)
-  return math.ceil(x)==x
-end
 
 tagen.stdmt = {
   List = {_name='List'}, Map = {_name='Map'},
@@ -430,27 +521,6 @@ function tagen.bind2 (fn,p)
 end
 
 
---- assert that the given argument is in fact of the correct type.
--- @param n argument index
--- @param val the value
--- @param tp the type
--- @param verify an optional verfication function
--- @param msg an optional custom message
--- @param lev optional stack position for trace, default 2
--- @raise if the argument n is not the correct type
---
--- @usage 
---   assert_arg(1,t,'table')
---   assert_arg(n,val,'string',path.isdir,'not a directory')
-function tagen.assert_arg (n,val,tp,verify,msg,lev)
-  if type(val) ~= tp then
-    local func_name = debug.getinfo(2).name
-    error(("%s: wrong argument type %s #%d (expected %s)"):format(func_name, type(val), n, tp), lev or 2)
-  end
-  if verify and not verify(val) then
-    error(("argument %d: '%s' %s"):format(n,val,msg),lev or 2)
-  end
-end
 
 local err_mode = 'default'
 
@@ -479,59 +549,11 @@ end
 raise = tagen.raise
 
 -- ¤Object
-function tagen.is_class(klass)
-  if type(klass) == "table" and klass.__IS_CLASS then
-    return true
-  else
-    return false
-  end
-end
-
-function tagen.is_instance(obj)
-  if type(obj) == "table" and obj.__IS_INSTANCE then
-    return true
-  else
-    return false
-  end
-end
-
-function tagen.instance_of(obj, klass)
-  if tagen.is_instance(obj) then
-    return obj.class == klass
-
-  else
-    return false
-  end
-end
-
-local function _kind_of(obj, klass)
-  local c = obj.class
-
-  while c do
-    if c == klass then 
-      return true 
-    elseif c.__mixins[klass] then
-      return true
-    end
-
-    c = c.superclass
-  end
-
-  return false
-end
-
-function tagen.kind_of(obj, klass)
-  if tagen.is_instance(obj) then
-    return _kind_of(obj, klass)
-  else
-    return false
-  end
-end
 
 function tagen.to_s(obj)
   if obj == nil then
     return ""
-  elseif tagen.is_instance(obj) and obj.to_s then
+  elseif tagen.kind_of(obj, "instance") and obj.to_s then
     return obj:to_s()
   else
     return tostring(obj)
@@ -541,7 +563,7 @@ end
 function tagen.inspect(obj)
   if type(obj) == "string" then
     return string.format("%q", obj)
-  elseif tagen.is_instance(obj) and obj.inspect then
+  elseif tagen.kind_of(obj, "instance") and obj.inspect then
     return obj:inspect()
   else
     return tostring(obj)

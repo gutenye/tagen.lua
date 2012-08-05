@@ -28,7 +28,7 @@ describe ["Enumerator"] = function()
       ary.data = {11, 12, 13}
       ret = {}
 
-      enum:with_object(obj, function(v, memo)
+      enum:with_object({}, function(v, memo)
         table.insert(memo, v)
       end)
 

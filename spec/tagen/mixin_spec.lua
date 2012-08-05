@@ -12,6 +12,10 @@ describe ["mixin"] = function()
     expect(Userable.name).to_equal("Userable")
   end
 
+  it ["it is mixin type"] = function()
+    expect(Userable.__IS_MIXIN).to_be_true()
+  end
+
   it ["includes class methods"] = function()
     function Userable.def:foo()
       self.var.age = 1
