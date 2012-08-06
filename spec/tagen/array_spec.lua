@@ -236,7 +236,6 @@ describe ["Array"] = function()
     end
   end
 
-  --[[
   describe ["#slice"] = function()
     it ["return a object when length is not given"] = function()
       a = Array:new{11, 12, 13}
@@ -268,15 +267,41 @@ describe ["Array"] = function()
   end
 
   describe ["#slice1"] = function()
-    it ["slice IN PLACE"] = function()
+    it ["return deleted object when given start"] = function()
+      a = Array:new{11, 12, 13}
+      b = 12
+      c = Array:new{11, 13}
+
+      expect(a:slice1(2)).to_equal(12)
+      expect(a).to_equal(c)
+    end
+
+
+    it ["return deleted objects when given start, length"] = function() 
+      a = Array:new{11, 12, 13}
+      b = Array:new{12}
+      c = Array:new{11, 13}
+
+      expect(a:slice1(2, 1)).to_equal(b)
+      expect(a).to_equal(c)
+    end
+
+    it ["return nil when start/begin out of range"] = function()
+      a = Array:new{11, 12}
+
+      expect(a:slice1(9)).to_be_nil()
+      expect(a:slice1(9,2)).to_be_nil()
+    end
+
+    it ["support -1 index"] = function()
       a = Array:new{1, 2, 3}
       b = Array:new{2, 3}
+      c = Array:new{1}
 
-      a:slice1(2, 2)
-      expect(a).to_equal(b)
+      expect(a:slice1(-2, 2)).to_equal(b)
+      expect(a).to_equal(c)
     end
   end
-  --]]
 
   describe ["at"] = function() 
     it ["return value at index"] = function()

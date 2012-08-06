@@ -248,47 +248,38 @@ function Array:count(obj)
   return count
 end
 
-local function _slice(self, start, length, is_delete)
+local function entry(ary, index)
+  if index < 0 then index = ary:length() + index + 1 end
 
-  if start < 0 then
-    start = self:length() + start + 1
+  return ary[index]
+end
+
+local function subseq(ary, beg, len)
+  if beg > ary:length() then return nil end
+  if beg < 0 or len < 0 then return nil end
+
+  if ary:length() < len or ary:length() < beg + len then
+    len = ary:length() - beg + 1
   end
 
-  if length == nil then
-    local ret = self[start]
-    if is_delete then
-      table.remove(self.__instance_variables, start)
-    end
+  local ret = Array:new()
 
+  if len == 0 then
     return ret
   else
-    local ary = Array:new()
-    local j = length + start
+    local j = beg + len
 
-    local i = 1
-    while i <= self:length() do
-      if i >= start then 
+    for i=1,ary:length() do
+      if i >= beg then
         if i < j then
-          local v = self[i]
-          if is_delete then
-            table.remove(self.__instance_variables, i)
-            j = j - 1
-          else
-            i = i + 1
-          end
-
-          ary:append(v)
+          ret:push(ary[i])
+          i = i + 1
         else
           break
         end
       end
     end
-
-    if ary:is_empty() then
-      return nil
-    else
-      return ary
-    end
+    return ret
   end
 end
 
@@ -307,7 +298,7 @@ end
 -- Returns nil if the index are out of range.
 --
 -- @param start number
--- @param length number
+-- @param length number (optional)
 --
 -- @usage
 --
@@ -316,14 +307,29 @@ end
 --    a:slice(1, 1)         #=> ["a"]
 --    a:slice(-2, 2)        #=> ["d", "e"]
 --    a:slice(100)          #=> nil
-function Array:slice(start, length)
-  assert_arg(1, start, "number")
-  return _slice(self, start, length, false)
+function Array:slice(...)
+  local args = table.pack(...)
+
+  if args.n == 2 then
+    beg = args[1]
+    len = args[2]
+
+    if beg < 0 then
+      beg = self:length() + beg + 1
+    end
+
+    return subseq(self, beg, len)
+
+  elseif args.n == 1 then
+    index = args[1]
+
+    return entry(self, index)
+  end
 end
 
 -- Element slice in place.
--- Deletes the element(s) given by an +index+ (optionally up to +length+
--- elements) or by a +range+.
+-- Deletes the element(s) given by an index (optionally up to length
+-- elements) or by a range.
 --
 -- Returns the deleted object (or objects), or +nil+ if the +index+ is out of
 -- range.
@@ -333,23 +339,53 @@ end
 --    slice1(start, length) -> new_ary or nil
 --
 --    a = Array{ "a", "b", "c" }
---    a.slice1(1)     #=> "b"
+--    a.slice1(2)     #=> "b"
 --    a               #=> ["a", "c"]
---    a.slice1(-1)    #=> "c"
---    a               #=> ["a"]
 --    a.slice1(100)   #=> nil
---    a               #=> ["a"]
-function Array:slice1(start, length)
-  assert_arg(1, start, "number")
+--    a               #=> ["a", "c"]
+--
+--    a = Array{ "a", "b", "c" }
+--    a.slice1(1, 2)  #=> ["a", "b"]
+--    a               #=> ["c"]
+function Array:slice1(...)
+  local args = table.pack(...)
 
-  return _slice(self, start, length, true)
+  if args.n == 2 then
+    beg = args[1]
+    len = args[2]
+
+    if len < 0 then return nil end
+    if beg < 0 then
+      beg = beg + self:length() + 1
+      if beg < 0 then return nil end
+    elseif self:length() < beg then 
+      return  nil
+    end
+
+    if self:length() < beg + len then
+      len = self:length() - beg + 1
+    end
+
+    if len == 0 then return Array:new() end
+
+    local ary2 = subseq(self, beg, len)
+    for i=1,len do
+      self:delete_at(beg)
+    end
+
+    return ary2
+
+  elseif args.n == 1 then
+    local index = args[1] 
+
+    return self:delete_at(index)
+  end
 end
 
 function Array:at(index)
   assert_arg(1, index, "number")
-  if index < 0 then index = self:length() + index + 1 end
 
-  return self[index]
+  return entry(self, index)
 end
 
 -- fetch(index, default=nil)
