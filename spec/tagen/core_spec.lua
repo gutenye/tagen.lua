@@ -57,6 +57,8 @@ describe["tagen"] = function()
     end
 
     it ["extra support class, ..."] = function()
+      expect(tagen.kind_of(nil, "nil")).to_be_true()
+
       expect(tagen.kind_of(1, "object")).to_be_true()
       expect(tagen.kind_of(nil, "object")).to_be_false()
 

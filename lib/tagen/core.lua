@@ -67,14 +67,23 @@ local function _kind_of(obj, klass)
   return false
 end
 
+--- Detect object's type
+--
+-- @param klass Class or String
+--
 -- @usage
 --
---  tagen.kind_of(obj, Array)
---  tagen.kind_of(obj, "string")
+--  tagen.kind_of(obj, Array)   
+--  tagen.kind_of(obj, "string") 
 --
--- "object", class, mixin, instance, file, callable, integer
+-- "object", nil class, mixin, instance, file, callable, integer
+--
+-- @return true or false
 function tagen.kind_of(obj, klass)
-  if klass == "object" then
+  if klass == "nil" then
+    return obj == nil
+
+  elseif klass == "object" then
     return obj ~= nil
 
   elseif klass == "class" then

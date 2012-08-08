@@ -59,11 +59,17 @@ end
 
 --- wrap an object to Array
 --
+-- <h3>call-seq:</h3>
+--
+--    Array.wrap(obj)      -> new_ary
+--
+-- @param obj obj,table,array
+--
 -- @usage
 --
---  Array.wrap(1)          => [1]
---  Array.wrap({1,2})      => [1,2]
---  Array.wrap(Array{1,2}) => [1,2]
+--  Array:wrap(1)          => [1]
+--  Array:wrap({1,2})      => [1,2]
+--  Array:wrap(Array{1,2}) => [1,2]
 --
 -- @return a new array.
 function Array.def:wrap(obj)
@@ -77,6 +83,7 @@ end
 --- Returns a new array.
 --
 -- <h3>call-seq:</h3>
+--
 --     initialize()
 --     initialize(table/array)
 --
@@ -103,16 +110,24 @@ end
 
 --- Duplicate self.
 --
--- @return a new array.
+-- <h3>call-seq:</h3>
+--  
+--    ary:dup()           -> new_ary
+--
 function Array:dup()
   return Array:new(self)
 end
 
 --- Replace self.
 --
--- @return self
+-- <h3>call-seq:</h3>
+--
+--    ary:replace(other_ary) -> self
+--
 function Array:replace(ary)
   self.__instance_variables = ary.__instance_variables
+
+  return self
 end
 
 -- Returns the number of elements in self.
@@ -121,8 +136,10 @@ end
 --
 -- @usage
 --
---   [ 1, 2, 3, 4, 5 ].length   #=> 5
---   [].length                  #=> 0
+--   a = Array{ 1, 2, 3, 4, 5 }
+--   a:length                  #=> 5
+--   a = Array{ }
+--   a:length                  #=> 0
 --
 -- @return number
 function Array:length()
@@ -131,6 +148,13 @@ end
 
 Array:ialias("size", "length")
 
+--- tostring metamethod.
+--
+-- alias: to_s, inspect
+--
+-- @usage
+--
+--  tostring(Array{1,"a"}) #=> [1, "a"]
 function Array:__tostring()
   return "[" .. table.concat(self:map(tagen.inspect).__instance_variables, ", ") .. "]"
 end
@@ -140,8 +164,12 @@ Array:ialias("inspect", "__tostring")
 
 --- Compare two arrays.
 --
+-- <h3>call-seq:</h3>
+--   
+--    ary1 == ary2   -> true or false
+--
 -- @param other array
--- @return boolean
+-- @return true or false
 function Array:__eq(other)
   if not tagen.kind_of(other, Array) then return false end
 
@@ -156,6 +184,10 @@ end
 
 --- Concat two arrays.
 --
+-- <h3>call-seq:</h3>
+--   
+--    ary1 .. ary2 -> new_ary
+--
 -- alias: __add, concat
 --
 -- @param other array
@@ -164,7 +196,7 @@ function Array:__concat(other)
   local ary = Array:new(self)
 
   for i=1,other:length() do
-    ary:append(other[i])
+    ary:push(other[i])
   end
 
   return ary
@@ -175,9 +207,15 @@ Array:ialias("concat", "__concat")
 
 
 --- Returns true if self contains no elements.
+--
+-- <h3>call-seq:</h3>
+--
+--   ary:is_empty() -> true or flase
+--
 -- @usage
 --
---   A{}.is_empty()   #=> true
+--   a = Array{}
+--   a:is_empty()   #=> true
 --
 -- @return boolean
 function Array:is_empty()
@@ -189,16 +227,21 @@ function Array:is_empty()
 end
 
 --- Returns true if the given obj is present in self (that is, if any
--- object `==` object+, otherwise returns false.
+-- object `==` object, otherwise returns false.
 --
--- alias: `contains`
+-- <h3>call-seq:</h3>
+--
+--   ary:include(obj)     -> true or false
+--   ary:contains(obj)    -> true or false
+--
+-- alias: contains
 -- @param obj object
 --
 -- @usage
 --
 --   a = Array{ "a", "b", "c" }
---   a.include("b")   #=> true
---   a.include("z")   #=> false
+--   a:include("b")   #=> true
+--   a:include("z")   #=> false
 --
 -- @return boolean
 function Array:include(obj)
@@ -216,24 +259,21 @@ Array:ialias("contains", "include")
 --- Returns the number of elements.
 --
 -- <h3>call-seq:</h3>
---     ary.count(obj)            -> int
---     ary.count(func{|item|})   -> int
+--
+--     ary:count(obj)            -> int
+--     ary:count(func{|item|})   -> int
 --
 -- If a object is given, counts the number of elements which equal obj using ==
 --
 -- If a function is given, counts the number of elements for which the function
 --  returns a true value.
 --
--- @param obj obj or func
---
 -- @usage
 --
---   ary = [1, 2, 4, 2]
---   ary.count                  #=> 4
---   ary.count(2)               #=> 2
---   ary.count { |x| x%2 == 0 } #=> 3
---
--- @return number
+--   ary = Array{1, 2, 4, 2}
+--   ary:count()                #=> 4
+--   ary:count(2)               #=> 2
+--   ary:count(function(x) return x%2 == 0 end) #=> 3
 function Array:count(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
@@ -286,8 +326,9 @@ end
 --- Element reference.
 --
 -- <h3>call-seq:</h3>
---     slice(index)            -> obj or nil
---     slice(start, length)    -> new_ary or nil
+--
+--     ary:slice(index)            -> obj or nil
+--     ary:slice(start, length)    -> new_ary or nil
 --
 -- Returns the element at index, or returns a
 -- subarray starting at the start index and continuing for lengthelements.
@@ -331,21 +372,24 @@ end
 -- Deletes the element(s) given by an index (optionally up to length
 -- elements) or by a range.
 --
--- Returns the deleted object (or objects), or +nil+ if the +index+ is out of
+-- Returns the deleted object (or objects), or nil if the index is out of
 -- range.
 --
 -- <h3>call-seq:</h3>
+--
 --    slice1(index)         -> obj or nil
 --    slice1(start, length) -> new_ary or nil
 --
+-- @usage
+--
 --    a = Array{ "a", "b", "c" }
---    a.slice1(2)     #=> "b"
+--    a:slice1(2)     #=> "b"
 --    a               #=> ["a", "c"]
---    a.slice1(100)   #=> nil
+--    a:slice1(100)   #=> nil
 --    a               #=> ["a", "c"]
 --
 --    a = Array{ "a", "b", "c" }
---    a.slice1(1, 2)  #=> ["a", "b"]
+--    a:slice1(1, 2)  #=> ["a", "b"]
 --    a               #=> ["c"]
 function Array:slice1(...)
   local args = table.pack(...)
@@ -382,15 +426,55 @@ function Array:slice1(...)
   end
 end
 
+-- Returns the element at index. A negative index counts from the end of
+-- self. Returns nil if the index is out of range. 
+--
+-- @param index number
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c", "d", "e" }
+--    a:at(1)     #=> "a"
+--    a:at(-1)    #=> "e"
+--
+-- @return obj or nil
 function Array:at(index)
   assert_arg(1, index, "number")
 
   return entry(self, index)
 end
 
--- fetch(index, default=nil)
+--- Tries to return the element at position index. 
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:fetch(index, default=nil)     -> obj
+--    ary:fetch(index, func{|index|})   -> obj
+--
+-- Alternatively, if a func is given it will only be executed when an
+-- invalid index is referenced.  Negative values of index count from the
+-- end of the array.
+--
+-- @usage
+--
+--   a = Array{ 11, 22, 33, 44 }
+--   a:fetch(2)               #=> 22
+--   a:fetch(-1)              #=> 44
+--   a:fetch(5, 'cat')        #=> "cat"
+--   a:fetch(100, function(i) return i.." is out of bounds" end)
+--                             #=> "100 is out of bounds"
+--
 function Array:fetch(index, default)
   assert_arg(1, index, "number")
+
+  if index < 0 then
+    index = self:length() + index + 1
+  end
+
+  if type(default) == "function" and (index < 1 or index > self:length()) then
+    return default(index)
+  end
+
   local v = self:at(index)
   if v == nil then
     return default
@@ -400,51 +484,88 @@ function Array:fetch(index, default)
 end
 Array:ialias("get", "fetch")
 
--- first(n=1)
+--- Returns the first element, or the first n elements, of the array.
+--
+-- <h3>call-seq</h3>
+--
+--    ary:first()     ->   obj or nil
+--    ary:first(n)    ->   new_ary
+--
+-- @usage
+--
+--   a = Array{ "q", "r", "s", "t" }
+--   a:first()     #=> "q"
+--   a:first(2)    #=> ["q", "r"]
+--
+-- @see Array:last
 function Array:first(n)
-  n = n or 1
+  assert_arg(2, n, {"nil", "number"})
 
-  if n == 1 then
+  if n == nil then
     return self[1]
-  else
-    n = math.min(n, self:length())
-    local ary = Array:new()
-    for i=1,n do
-      ary:push(self[i])
-    end
-    return ary
   end
-end
 
--- last(n=1)
-function Array:last(n)
-  n = n or 1
-
-  if n == 1 then
-    return self[self:length()]
-  else
-    n = math.max(self:length()-n+1, 0)
-    local ary = Array:new()
-    for i=n,self:length() do
-      ary:push(self[i])
-    end
-    return ary
-  end
-end
-
--- (*index)
-function Array:values_at(...)
+  n = math.min(n, self:length())
   local ary = Array:new()
-  local args = table.pack(...)
 
-  for i=1,args.n do
-    ary:append(self:at(args[i]))
+  for i=1,n do
+    ary:push(self[i])
   end
 
   return ary
 end
 
--- (obj),(func) =>nil
+--- Returns the last element(s) of self.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:last()     ->  obj or nil
+--    ary:last(n)    ->  new_ary
+--
+-- @usage
+--
+--    a = Array{ "w", "x", "y", "z" }
+--    a:last     #=> "z"
+--    a:last(2)  #=> ["y", "z"]
+--
+-- @see Arry:first
+function Array:last(n)
+  assert_arg(2, n, {"nil", "number"})
+
+  if n == nil then
+    return self[self:length()]
+  end
+
+  n = math.max(self:length()-n+1, 0)
+  local ary = Array:new()
+
+  for i=n,self:length() do
+    ary:push(self[i])
+  end
+
+  return ary
+end
+
+--- Returns the *index* of the first object in ary such that the object is
+-- `==` to obj.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:index(obj)                      ->  int or nil
+--    ary:index(function(item) block end) ->  int or nil
+--
+-- If a function is given instead of an argument, returns the *index* of first
+-- the object for which the function returns true.  Returns nil if no match
+-- is found.
+--
+-- alias: find_index
+--
+--    a = Array{ "a", "b", "c" }
+--    a:index("b")              #=> 1
+--    a:index("z")              #=> nil
+--    a:index(function(x) return x=="b" end) #=> 1
+--
+-- @see Array:rindex
 function Array:index(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
@@ -458,6 +579,23 @@ function Array:index(obj)
   return nil
 end
 
+Array:ialias("find_index", "index")
+
+--- Returns the *index* of the last object in self `==` to obj.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:rindex(obj)                      ->  int or nil
+--    ary:rindex(function(item) block end) ->  int or nil
+--
+-- @usage
+--
+--  a = Array{ "a", "b", "b", "b", "c" }
+--  a:rindex("b")             #=> 3
+--  a:rindex("z")             #=> nil
+--  a:rindex(function(x) return x == "b" end) #=> 3
+--
+-- @see Array:index
 function Array:rindex(obj)
   local func
   if type(obj) ~= "function" then func = function(v) return v==obj end else func = obj end
@@ -471,7 +609,34 @@ function Array:rindex(obj)
   return nil
 end
 
--- for insert, append, unshift
+--- Returns an array containing the elements in self corresponding to the
+-- given selector(s).
+--
+-- <h3>call-seq:</h3>
+--
+--    ary.values_at(selector, ...)  -> new_ary
+--
+-- @param ... (integer)
+--
+-- @usage
+--
+--  a = A{ "a", "b", "c", "d", "e", "f", }
+--  a.values_at(1, 3, 5)
+--  a.values_at(-1, -3, -5, -7)
+--
+-- @see Array:select
+function Array:values_at(...)
+  local ary = Array:new()
+  local args = table.pack(...)
+
+  for i=1,args.n do
+    ary:push(self:at(args[i]))
+  end
+
+  return ary
+end
+
+-- for insert, push, unshift
 local function _insert(self, index, ...)
 	local args = table.pack(...)
 
@@ -485,66 +650,177 @@ local function _insert(self, index, ...)
   end
 end
 
--- insert(index, obj...)
+--- Inserts the given values before the element with the given index.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:insert(index, obj...)  -> ary
+--
+-- Negative indices count backwards from the end of the array, where -1 is
+-- the last element.
+--
+-- @usage
+--
+--   a = Array{ "a", "b", "c", "d" }
+--   a:insert(2, 99)         #=> ["a", "b", 99, "c", "d"]
+--   a:insert(-2, 1, 2, 3)   #=> ["a", "b", 99, "c", 1, 2, 3, "d"]
+--
 function Array:insert(index, ...)
   assert_arg(1, index, "number")
   return _insert(self, index, ...)
 end
 
--- append(obj...)
-function Array:append(...)
+--- Append---Pushes the given object on to the end of this array. This
+-- expression returns the array itself, so several appends
+-- may be chained together.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:push(obj)              -> ary
+--    ary:append(obj)            -> ary
+--
+-- alias: append
+--
+-- @usage
+--
+--    a = Array{1}
+--    a:append("a"):append(unpack(Array{3, 4})) #=> [1, "a", 3, 4]
+--     
+function Array:push(...)
   return _insert(self, nil, ...)
 end
 
-Array:ialias("push", "append")
+Array:ialias("append", "push")
 
+--- Prepends objects to the front of self, moving other elements upwards.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary.unshift(obj, ...)  -> ary
+--
+-- @usage
+--
+--    a = Array{ "b", "c", "d" }
+--    a.unshift("a")   #=> ["a", "b", "c", "d"]
+--    a.unshift(1, 2)  #=> [ 1, 2, "a", "b", "c", "d"]
+--
+-- @see Array:shift
 function Array:unshift(...)
   return _insert(self, 1, ...)
 end
 
--- for pop, shift
-local function _pop(ary, n, is_last)
-  local ret = Array:new()
-  local v
-
-  for i=1,n do
-    if is_last then
-      v = ary:delete_at(ary:length() - n + i)
-    else
-      v = ary:delete_at(1)
-    end
-
-    ret:append(v)
-  end
-
-  if n == 1 then
-    return ret[1]
-  else
-    return ret
-  end
-end
-
--- pop(n=1)
+-- Removes the last element from self and returns it, or
+-- nil if the array is empty.
+--
+-- <h3>call-seq:</h3>
+--    ary:pop()     -> obj or nil
+--    ary:pop(n)    -> new_ary
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c", "d" }
+--    a:pop()    #=> "d"
+--    a:pop(2)  #=> ["b", "c"]
+--    a         #=> ["a"]
+--
+-- @see Array:push
 function Array:pop(n)
-  n = n or 1
-  assert_arg(1, n, "number")
-  return _pop(self, n, true)
+  assert_arg(2, n, {"nil", "number"})
+
+  if n == nil then
+    return self:delete_at(self:length())
+  end
+
+  local ret = Array:new()
+  for i=1,n do
+    v = self:delete_at(self:length() - n + i)
+
+    ret:push(v)
+  end
+
+  return ret
 end
 
--- shift(n=1)
+--- Removes the first element of self and returns it (shifting all
+-- other elements down by one). Returns nil if the array
+-- is empty.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:shift()    -> obj or nil
+--    ary:shift(n)   -> new_ary
+--
+-- If a number n is given, returns an array of the first n elements
+-- (or less). With ary containing only the remainder elements, 
+-- not including what was shifted to new_ary.
+--
+-- @usage
+--
+--    args = Array{ "-m", "-q", "filename" }
+--    args:shift()     #=> "-m"
+--    args           #=> ["-q", "filename"]
+--
+--    args = Array{ "-m", "-q", "filename" }
+--    args:shift(2)  #=> ["-m", "-q"]
+--    args           #=> ["filename"]
+--
+-- @see Array:unshift
 function Array:shift(n)
-  n = n or 1
-  assert_arg(1, n, "number")
-  return _pop(self, n, false)
+  assert_arg(2, n, {"nil", "number"})
+
+  if n == nil then
+    return self:delete_at(1)
+  end
+
+  local ret = Array:new()
+  for i=1,n do
+    v = self:delete_at(1)
+
+    ret:push(v)
+  end
+
+  return ret
 end
 
+--- Deletes the element at the specified index, returning that element, or
+-- nil if the index is out of range.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:delete_at(index)  -> obj or nil
+--
+-- @usage
+--
+--    a = Array{"ant", "bat", "cat", "dog"}
+--    a:delete_at(2)    #=> "cat"
+--    a                 #=> ["ant", "bat", "dog"]
+--    a:delete_at(99)   #=> nil
+--
+-- @see Array:slice1
 function Array:delete_at(index)
   assert_arg(1, index, "number")
   return table.remove(self.__instance_variables, index)
 end
 
--- delete(obj)
--- delete(obj, func)
+-- Deletes all items from self that are equal to obj.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:delete(obj)                        -> obj or nil
+--    ary:delete(obj, func{=>"not found"})   -> obj or nil
+--
+-- If any items are found, returns obj, otherwise nil is returned instead.
+--
+-- If the func is given, the result of the func is returned if
+-- the item is not found.  
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "b", "b", "c" }
+--    a:delete("b")                   #=> "b"
+--    a                               #=> ["a", "c"]
+--    a:delete("z")                   #=> nil
+--    a:delete("z") { "not found" }   #=> "not found"
 function Array:delete(obj, func)
   if type(func) ~= "function" then func = function() return nil end end
   local is_found = false
@@ -563,6 +839,21 @@ function Array:delete(obj, func)
   end
 end
 
+-- Deletes every element of self for which func evaluates to true.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:delete_if(func{|item|})  -> ary
+--
+-- The array is changed instantly every time the block is called, not after
+-- the iteration is over.
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c" }
+--    a:delete_if(function(x) return x >= "b" end)   #=> ["a"]
+--
+-- @see Array:reject1
 function Array:delete_if(func)
   local i = 1
   while i <= self:length() do
@@ -576,14 +867,37 @@ function Array:delete_if(func)
   return self
 end
 
+--- Removes all elements from self.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:clear()    -> ary
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c", "d", "e" }
+--    a.clear    #=> [ ]
 function Array:clear()
   self.__instance_variables = {}
 
   return self
 end
 
--- each()
--- each(func{v, i})
+-- Calls the given func once for each element in self.
+--
+-- call-seq:
+--
+--    ary:each(func{|item, index|})  -> ary
+--    ary:each()                     -> Enumerator
+--
+-- An Enumerator is returned if no block is given.
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c" }
+--    a:each(function(x) io.write(x.." -- ") end) 
+--                  # produces: a -- b -- c --
+--
 function Array:each(func)
   if func == nil then return self.to_enum() end
 
@@ -596,7 +910,22 @@ function Array:each(func)
   end
 end
 
--- map(func{v,i})
+--- Invokes the given func once for each element of self, replacing the
+-- element with the value returned by the func.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:collect1(func{|item|})   -> ary
+--    ary:map1(func{|item|})       -> ary
+--
+-- alias: collect1
+--
+-- @usage
+--
+--    a = Array{ "a", "b", "c", "d" }
+--    a.map1(function(x) return x + "!" end)
+--    a #=>  [ "a!", "b!", "c!", "d!" ]
+--
 function Array:map1(func)
   for i=1,self:length() do
     self[i] = func(self[i], i)
@@ -605,16 +934,45 @@ function Array:map1(func)
   return self
 end
 
+Array:ialias("collect1", "map1")
+
+--- Invokes the given block once for each element of self.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:collect(func{|item|})  -> new_ary
+--    ary:map(func{|item|})      -> new_ary
+--
+-- Creates a new array containing the values returned by the block.
+--
+-- alias: collect
+--
+-- @usage
+--
+--    a = Array{ "a", "b" }
+--    a.map(function(x) return x .. "!" end)   #=> ["a!", "b!" ]
+--    a                       #=> ["a", "b" ]
+--
 function Array:map(func)
   return self:dup():map1(func)
 end
 
-Array:ialias("collect1", "map1")
 Array:ialias("collect", "map")
 
--- join(sep="")
+--- Returns a string created by converting each element of the array to
+-- a string, separated by the given separator.
 --
--- remove nil, call tagen.to_s
+-- <h3>call-seq:</h3>
+--
+--    ary.join(separator="")    -> str
+--
+-- It skip nil value and calls tagen.to_s
+--
+-- @usage
+-- 
+--    Array{ "a", "b", "c" }:join()      #=> "abc"
+--    Array{ "a", "b", "c" }:join("-")   #=> "a-b-c"
+--
 function Array:join(sep)
   sep = sep or ""
   assert_arg(1, sep, "string")
@@ -622,16 +980,39 @@ function Array:join(sep)
   return table.concat(self:map(tagen.to_s).__instance_variables, sep)
 end
 
+-- Returns a new array containing self's elements in reverse order.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:reverse()    -> new_ary
+--
+-- @usage
+--
+--    Array{ "a", "b", "c" }:reverse()   #=> ["c", "b", "a"]
+--    Array{ 1 }:reverse()               #=> [1]
+--
 function Array:reverse()
   local ary = Array:new()
 
   for i=self:length(),1,-1 do
-    ary:append(self[i])
+    ary:push(self[i])
   end
 
   return ary
 end
 
+-- Reverses self in place.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:reverse1()   -> ary
+--
+-- @usage
+--
+--    a = array{ "a", "b", "c" }
+--    a:reverse1()       #=> ["c", "b", "a"]
+--    a                #=> ["c", "b", "a"]
+--
 function Array:reverse1()
   local i, j =1, self:length()
   local tmp
@@ -664,7 +1045,7 @@ function Array:uniq1()
   self:clear()
 
   for k,v in pairs(hash) do
-    self:append(k)
+    self:push(k)
   end
 
   return self
@@ -675,13 +1056,41 @@ function Array:uniq()
 end
 --]]
 
--- sort1()
--- sort1(func)
+--- Sorts self in place.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:sort1()                -> ary
+--    ary:sort1(func{|a,b|})     -> ary
+--
+-- Invoke table.sort
+--
+-- @usage
+--
+--    a = Array{ 3, 2, 1 }
+--    a:sort1()                  #=> [1, 2, 3]
+--    a:sort1(func{|x,y| x > y}  #=> [3, 2, 1]
+--
 function Array:sort1(func)
   table.sort(self.__instance_variables, func)
   return self
 end
 
+
+-- Returns a new array created by sorting self.
+--
+-- <h3>call-seq:</h3>
+--
+--    ary:sort()                -> new_ary
+--    ary:sort(func{|a, b|})    -> new_ary
+--
+-- Invoke table.sort
+--
+-- @usage
+--
+--    a = Array{ 3, 2, 1 }
+--    a:sort()                  #=> [1, 2, 3]
+--    a:sort(func{|x,y| x > y}  #=> [3, 2, 1]
 function Array:sort(func)
   return self:dup():sort1(func)
 end

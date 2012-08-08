@@ -150,7 +150,7 @@ function Enumerable:map(func)
   local ary = Array:new()
 
   self:each(function(v, i) 
-    ary:append(func(v, i))
+    ary:push(func(v, i))
   end)
 
   return ary
